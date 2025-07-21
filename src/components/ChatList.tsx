@@ -1,12 +1,10 @@
 import { useContext, useEffect, useState } from "react";
 import ChatCard from "../components/ChatCard";
-
-import dummyData from "../dummyData/dummyData";
 import PendingRequests from "./PendingRequests";
 import PastGames from "./PastGames";
 import ChatRoom from "./ChatRoomInner";
 import axios from "axios";
-import MessageIcon from "../icons/MessageIcon"
+import MessageIcon from "../icons/MessageIcon";
 import { ClientIdContext } from "../main";
 import { API_BASE_URL } from "./ApiBaseUrl";
 
@@ -33,7 +31,6 @@ type Tribe = {
   sportChatId: string;
 };
 
-
 type GameSummary = {
   gameId: string;
   sport: string;
@@ -46,7 +43,6 @@ type GameSummary = {
 
 // Default dummy data for fallback
 
-
 export default function ChatList({ type, onOpenChat }: ChatListProps) {
   const [showPending, setShowPending] = useState(false);
   const [pastGames, setPastGames] = useState(false);
@@ -57,13 +53,26 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
   const [sports, setSports] = useState<string[]>([]);
   const [mySport, setMySports] = useState<Tribe[]>([]);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-const [latestPendingTime, setLatestPendingTime] = useState("");
-const clientId = useContext(ClientIdContext)
-const [chatName, setChatName] = useState<string | null>(null);
-
-
+  const [latestPendingTime, setLatestPendingTime] = useState("");
+  const clientId = useContext(ClientIdContext);
+  const [chatName, setChatName] = useState<string | null>(null);
+  // In ChatList.tsx - Add these state variables after existing useState declarations
+  const [buddyTimestamps, setBuddyTimestamps] = useState<{
+    [key: string]: string;
+  }>({});
+  const [gameTimestamps, setGameTimestamps] = useState<{
+    [key: string]: string;
+  }>({});
+  const [tribeTimestamps, setTribeTimestamps] = useState<{
+    [key: string]: string;
+  }>({});
+  // In ChatList.tsx - Add this state after existing useState declarations
+  const [buddyAvatars, setBuddyAvatars] = useState<{ [key: string]: string }>(
+    {}
+  );
 
   // Fetch main user data, set buddies and gamesBooked IDs
+  // In ChatList.tsx - Replace the fetchBuddiesFromAPI function
   async function fetchBuddiesFromAPI(mainUserId: string): Promise<Buddy[]> {
     try {
       // 1. Fetch main user data
@@ -72,15 +81,17 @@ const [chatName, setChatName] = useState<string | null>(null);
       );
 
       // Set gamesBooked IDs into state
-      const gameResponse = await axios.get(`${API_BASE_URL}/human/getChatId/${mainUserId}`); 
+      const gameResponse = await axios.get(
+        `${API_BASE_URL}/human/getChatId/${mainUserId}`
+      );
       console.log("game new api raw", gameResponse);
-      
-      const gamesBooked = Array.isArray(gameResponse.data) 
-  ? gameResponse.data.map((item: any) => item.gameId) 
-  : [];
+
+      const gamesBooked = Array.isArray(gameResponse.data)
+        ? gameResponse.data.map((item: any) => item.gameId)
+        : [];
 
       console.log(gamesBooked, "Games booked new api");
-      
+
       setGames(gamesBooked);
 
       // Fetch fave users details
@@ -90,6 +101,34 @@ const [chatName, setChatName] = useState<string | null>(null);
           axios.get(`${API_BASE_URL}/human/${userId}`)
         )
       );
+
+      // Fetch avatars for all buddies
+      const avatarPromises = faveUserIds.map(async (userId: string) => {
+        try {
+          const response = await axios.post(
+            "https://play-os-backendv2.forgehub.in/human/human/get-photo",
+            `${userId}`
+          );
+          return {
+            userId,
+            avatar:
+              response.data || "https://randomuser.me/api/portraits/men/78.jpg",
+          };
+        } catch (err) {
+          return {
+            userId,
+            avatar: "https://randomuser.me/api/portraits/men/78.jpg",
+          };
+        }
+      });
+
+      const avatarResults = await Promise.all(avatarPromises);
+      const avatarMap = avatarResults.reduce((acc, { userId, avatar }) => {
+        acc[userId] = avatar;
+        return acc;
+      }, {} as { [key: string]: string });
+
+      setBuddyAvatars(avatarMap);
 
       const buddiesFromAPI: Buddy[] = faveUsersResponses.map((res) => ({
         name: res.data.name || "Unknown",
@@ -113,71 +152,82 @@ const [chatName, setChatName] = useState<string | null>(null);
       return;
     }
 
-async function fetchGameDetails() {
-  const fetchedGames: GameSummary[] = [];
-  try {
-    // 1. Fetch chatId mappings once for this user
-    const chatRes = await axios.get(
-      `${API_BASE_URL}/human/getChatId/${clientId}`
-    );
-    const chatMappings: {
-      courtId: string;
-      startTime: string;
-      endTime: string;
-      gameId: string;
-      chatId: string;
-    }[] = chatRes.data;
+    // In ChatList.tsx - Replace the existing fetchGameDetails function
+    async function fetchGameDetails() {
+      const fetchedGames: GameSummary[] = [];
+      try {
+        // 1. Fetch chatId mappings once for this user
+        const chatRes = await axios.get(
+          `${API_BASE_URL}/human/getChatId/${clientId}`
+        );
+        const chatMappings: {
+          courtId: string;
+          startTime: string;
+          endTime: string;
+          gameId: string;
+          chatId: string;
+        }[] = chatRes.data;
 
-    // 2. Now fetch game details in parallel
-    await Promise.all(
-      games.map(async (gameId) => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/game/${gameId}`);
-          const data = res.data;
-          console.log("Game fetch api", data);
-          
-          // Find matching chatId from chatMappings for this gameId
-          const mapping = chatMappings.find((m) => m.gameId === gameId);
-          const gameChatId = mapping?.chatId ?? "UnknownChatId";
+        // 2. Now fetch game details in parallel
+        await Promise.all(
+          games.map(async (gameId) => {
+            try {
+              const res = await axios.get(`${API_BASE_URL}/game/${gameId}`);
+              const data = res.data;
+              console.log("Game fetch api", data);
 
-          const sport = data.sport || "Unknown Sport";
-          const players = data.scheduledPlayersDetails || [];
-          const membersNames = players.map((p: any) => p.name).join(", ");
-          const count = players.length || 0;
-          const time = data.startTime
-            ? new Date(data.startTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "N/A";
+              // Find matching chatId from chatMappings for this gameId
+              const mapping = chatMappings.find((m) => m.gameId === gameId);
+              const gameChatId = mapping?.chatId ?? "UnknownChatId";
 
-          fetchedGames.push({
-            gameId,
-            sport,
-            members: membersNames,
-            count,
-            time,
-            message: "Game has started",
-            gameChatId, // add chatId here
-          });
-        } catch (err) {
-          console.error(`Failed to fetch details for game ${gameId}`, err);
-        }
-      })
-    );
-    setMyGame(fetchedGames);
-  } catch (error) {
-    console.error("Error fetching game details or chat mappings", error);
-    setMyGame([]);
-  }
-}
+              const sport = data.sport || "Unknown Sport";
 
+              // Format sport name with date
+              const gameDate = data.startTime
+                ? new Date(data.startTime).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "";
+              const formattedSportName = gameDate
+                ? `${sport} - ${gameDate}`
+                : sport;
+
+              const players = data.scheduledPlayersDetails || [];
+              const membersNames = players.map((p: any) => p.name).join(", ");
+              const count = players.length || 0;
+              const time = data.startTime
+                ? new Date(data.startTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "N/A";
+
+              fetchedGames.push({
+                gameId,
+                sport: formattedSportName, // Use formatted name with date
+                members: membersNames,
+                count,
+                time,
+                message: "",
+                gameChatId, // add chatId here
+              });
+            } catch (err) {
+              console.error(`Failed to fetch details for game ${gameId}`, err);
+            }
+          })
+        );
+        setMyGame(fetchedGames);
+      } catch (error) {
+        console.error("Error fetching game details or chat mappings", error);
+        setMyGame([]);
+      }
+    }
 
     fetchGameDetails();
   }, [games, type]);
 
- 
-useEffect(() => {
+  useEffect(() => {
     if (type !== "tribe") {
       setMySports([]);
       return;
@@ -185,12 +235,12 @@ useEffect(() => {
 
     async function fetchSportDetails() {
       console.log("fetching sports!!!");
-      
+
       try {
         const res = await axios.get(`${API_BASE_URL}/sports/all`);
         const data = res.data;
         console.log("api sport data ", data);
-        
+
         // Map the API response to Tribe format
         const fetchedSports: Tribe[] = data.map((sportItem: any) => {
           const sportName = sportItem.name || "Unknown Sport";
@@ -198,7 +248,7 @@ useEffect(() => {
           const maxPlayers = sportItem.maxPlayers || 0;
           const minPlayers = sportItem.minPlayers || 0;
           const sportChatId = sportItem.chatId;
-          
+
           return {
             name: sportName,
             members: `${minPlayers}-${maxPlayers} players`, // Use player range as members info
@@ -211,7 +261,6 @@ useEffect(() => {
 
         setMySports(fetchedSports);
         console.log(fetchedSports, "sports data!!");
-        
       } catch (error) {
         console.error("Error fetching sport details", error);
         setMySports([]);
@@ -220,7 +269,6 @@ useEffect(() => {
 
     fetchSportDetails();
   }, [type]);
-  
 
   // Helper function for opening chat
   const handleOpenChat = (id: string) => {
@@ -245,41 +293,74 @@ useEffect(() => {
     }
   }, [type]);
 
-async function fetchPendingRequests(mainUserId: string) {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/human/${mainUserId}`);
-    const pendingRequestIds = res.data.pendingRequest || [];
-    setPendingRequestsCount(pendingRequestIds.length);
+  async function fetchPendingRequests(mainUserId: string) {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/human/${mainUserId}`);
+      const pendingRequestIds = res.data.pendingRequest || [];
+      setPendingRequestsCount(pendingRequestIds.length);
 
-    if (pendingRequestIds.length === 0) {
+      if (pendingRequestIds.length === 0) {
+        setLatestPendingTime("");
+        return;
+      }
+
+      // To get request time, you must have some time metadata for each request.
+      // If not available, skip time logic.
+      // Here, assuming .pendingRequestTimes is an array of timestamps in .data
+      const pendingRequestTimes = res.data.pendingRequestTimes || [];
+      if (pendingRequestTimes.length) {
+        const latest = Math.max(
+          ...pendingRequestTimes.map((t: string | number) =>
+            new Date(t).getTime()
+          )
+        );
+        setLatestPendingTime(
+          new Date(latest).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+      } else {
+        setLatestPendingTime("");
+      }
+    } catch (error) {
+      setPendingRequestsCount(0);
       setLatestPendingTime("");
-      return;
+      console.error("Error fetching pending requests:", error);
     }
+  }
 
-    // To get request time, you must have some time metadata for each request.
-    // If not available, skip time logic.
-    // Here, assuming .pendingRequestTimes is an array of timestamps in .data
-    const pendingRequestTimes = res.data.pendingRequestTimes || [];
-    if (pendingRequestTimes.length) {
-      const latest = Math.max(...pendingRequestTimes.map((t: string | number) => new Date(t).getTime()));
-      setLatestPendingTime(new Date(latest).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    } else {
-      setLatestPendingTime("");
+  useEffect(() => {
+    if (type === "buddy") {
+      fetchPendingRequests(clientId);
     }
+  }, [type]);
 
-  } catch (error) {
-    setPendingRequestsCount(0);
-    setLatestPendingTime("");
-    console.error("Error fetching pending requests:", error);
-  }
-}
+  // In ChatList.tsx - Add this function before the return statement
+  const fetchLatestMessageTime = async (
+    roomName: string,
+    type: "buddy" | "game" | "tribe",
+    id: string
+  ) => {
+    try {
+      // This would require an API call to get the latest message timestamp
+      // For now, using current time as placeholder
+      const currentTime = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
-useEffect(() => {
-  if (type === "buddy") {
-    fetchPendingRequests(clientId);
-  }
-}, [type]);
-
+      if (type === "buddy") {
+        setBuddyTimestamps((prev) => ({ ...prev, [id]: currentTime }));
+      } else if (type === "game") {
+        setGameTimestamps((prev) => ({ ...prev, [id]: currentTime }));
+      } else if (type === "tribe") {
+        setTribeTimestamps((prev) => ({ ...prev, [id]: currentTime }));
+      }
+    } catch (error) {
+      console.error("Error fetching latest message time:", error);
+    }
+  };
 
   return (
     <>
@@ -294,20 +375,27 @@ useEffect(() => {
             alwaysShowCount
           />
           {buddies.map((user) => (
+            // In ChatList.tsx - Replace buddy ChatCard with dynamic time
+            // In ChatList.tsx - Replace buddy ChatCard icon with avatar
             <ChatCard
               key={user.name}
               label={user.name}
-              count={user.count}  
-              time={user.time}
+              count={user.count}
+              time={buddyTimestamps[user.id] || user.time}
               message={user.message}
               onClick={() => {
                 onOpenChat(user.id);
                 setPastGames(false);
               }}
               icon={
-                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
-                  {user.name[0]}
-                </div>
+                <img
+                  src={
+                    buddyAvatars[user.id] ||
+                    "https://randomuser.me/api/portraits/men/78.jpg"
+                  }
+                  alt={user.name}
+                  className="h-8 w-8 rounded-full object-cover"
+                />
               }
             />
           ))}
@@ -329,15 +417,21 @@ useEffect(() => {
             <div className="text-sm text-gray-500 p-4">No games found</div>
           ) : (
             myGame.map((group) => (
+              // In ChatList.tsx - Replace game ChatCard with dynamic time
               <ChatCard
                 key={group.gameId}
                 label={group.sport}
-                count={group.count}
-                time={group.time}
+                count={0}
+                time={gameTimestamps[group.gameChatId]}
                 message={group.message}
                 onClick={() => {
-                  onOpenChat(group.gameChatId);
-                  setChatName(group.sport)
+                  setChatName(group.sport.split(" - ")[0]);
+                  setTimeout(() => {
+                    console.log("timeout");
+                    onOpenChat(group.gameChatId);
+                  }, 0);
+                  
+
                   setPastGames(false);
                 }}
                 icon={
@@ -353,22 +447,31 @@ useEffect(() => {
       )}
 
       {pastGames && (
-        <PastGames onOpenChat={handleOpenChat} onClose={() => setPastGames(false)} />
+        <PastGames
+          onOpenChat={handleOpenChat}
+          onClose={() => setPastGames(false)}
+        />
       )}
 
       {type === "tribe" && (
         <>
           {/* <ChatCard label="My Tribes" count={2} time="Today" /> */}
           {mySport.map((tribe) => (
+            // In ChatList.tsx - Replace tribe ChatCard with dynamic time
             <ChatCard
               key={tribe.name}
               label={tribe.name}
-              count={tribe.count}
-              time={tribe.time}
+              count={0}
+              time={tribeTimestamps[tribe.sportChatId] || tribe.time}
               message={tribe.message}
               onClick={() => {
-                onOpenChat(tribe.sportChatId);
-                setChatName(tribe.name)
+                setChatName(tribe.name);
+                setTimeout(() => {
+                  console.log("timeout");
+                  onOpenChat(tribe.sportChatId);
+                }, 0);
+                
+
                 setPastGames(false);
               }}
               icon={
@@ -388,7 +491,7 @@ useEffect(() => {
           goBack={() => setActiveChatId(null)}
           type={type}
           roomName={`room-${type}-${activeChatId}`}
-         chatNames={chatName ?? undefined}
+          chatNames={chatName}
         />
       )}
     </>

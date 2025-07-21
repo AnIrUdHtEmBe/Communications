@@ -4,7 +4,6 @@ import { useMessages } from "@ably/chat/react";
 import { useContext } from "react";
 import { ClientIdContext } from "../main";
 
-
 import { ChatMessageEventType } from "@ably/chat";
 import axios from "axios";
 import { API_BASE_URL } from "./ApiBaseUrl";
@@ -12,7 +11,7 @@ import { API_BASE_URL } from "./ApiBaseUrl";
 export interface ChatRoomProps {
   type?: "buddy" | "game" | "tribe";
   chatId: string;
-  chatNames?: string;
+  chatNames: string | null;
   goBack: () => void;
   activeTab?: string;
   roomName?: string;
@@ -62,18 +61,62 @@ export default function ChatRoomInner({
   //     }
   //   },
   // });
+  // In ChatRoomInner.tsx - Add this state after existing useState
+  const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
+  const [displayName, setDisplayName] = useState<string>("");
 
   const [chatName, setChatName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    "https://randomuser.me/api/portraits/men/78.jpg" // default avatar
+  );
+
+  useEffect(() => {
+    if (!chatId) return;
+
+    const fetchAvatar = async () => {
+      try {
+        // POST per API docs, sending chatId as a JSON string
+        const response = await axios.post(
+          "https://play-os-backendv2.forgehub.in/human/human/get-photo",
+          `${chatId}` // note: stringify chatId because API expects `string` body
+        );
+        if (response.data) {
+          setAvatarUrl(response.data);
+        } else {
+          setAvatarUrl("https://randomuser.me/api/portraits/men/78.jpg");
+        }
+      } catch (err) {
+        console.error("Failed to fetch avatar photo", err);
+        setAvatarUrl("https://randomuser.me/api/portraits/men/78.jpg");
+      }
+    };
+
+    fetchAvatar();
+  }, [chatId]);
 
   const fetchChatName = async (chatId: string) => {
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/human/${chatId}`
-      );
+      const response = await axios.get(`${API_BASE_URL}/human/${chatId}`);
       setChatName(response.data.name); // ✅ update state
     } catch (err) {
       console.error("Failed to fetch chat name", err);
       setChatName("Unknown");
+    }
+  };
+
+  // In ChatRoomInner.tsx - Add this function after fetchChatName function
+  const fetchSenderName = async (senderId: string) => {
+    if (senderNames[senderId]) return senderNames[senderId]; // Already cached
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/human/${senderId}`);
+      const name = response.data.name || "Unknown";
+      setSenderNames((prev) => ({ ...prev, [senderId]: name }));
+      return name;
+    } catch (err) {
+      console.error("Failed to fetch sender name", err);
+      setSenderNames((prev) => ({ ...prev, [senderId]: "Unknown" }));
+      return "Unknown";
     }
   };
 
@@ -135,6 +178,71 @@ export default function ChatRoomInner({
     dateLabel = lastMsgTimestamp.toLocaleDateString();
   }
 
+  // In ChatRoomInner.tsx - Add this useEffect to fetch sender names when messages change
+  useEffect(() => {
+    if (type !== "buddy" && messages.length > 0) {
+      // Fetch names for all unique senders
+      const uniqueSenders = [
+        ...new Set(
+          messages
+            .filter((msg) => msg.clientId !== clientsIds)
+            .map((msg) => msg.clientId)
+        ),
+      ];
+
+      uniqueSenders.forEach((senderId) => {
+        if (!senderNames[senderId]) {
+          fetchSenderName(senderId);
+        }
+      });
+    }
+  }, [messages, type]);
+
+useEffect(() => {
+  const fetchDisplayName = async () => {
+    try {
+      if (type === "buddy") {
+        setDisplayName(chatName || "Buddy Chat");
+      } else if (type === "game") {
+        // Find game by matching chatId in the user's chat mappings
+        const chatRes = await axios.get(`${API_BASE_URL}/human/getChatId/${clientId}`);
+        const mapping = chatRes.data.find((item: any) => item.chatId === chatId);
+        
+        if (mapping) {
+          const gameResponse = await axios.get(`${API_BASE_URL}/game/${mapping.gameId}`);
+          const sport = gameResponse.data.sport || "Unknown Sport";
+          
+          // Format sport name with date (same as ChatList)
+          const gameDate = gameResponse.data.startTime
+            ? new Date(gameResponse.data.startTime).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "";
+          const formattedSportName = gameDate
+            ? `${sport} - ${gameDate}`
+            : sport;
+            
+          setDisplayName(formattedSportName);
+        } else {
+          setDisplayName("Game Chat");
+        }
+      } else if (type === "tribe") {
+        // Get all sports and find the one with matching chatId
+        const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
+        const sport = sportsResponse.data.find((s: any) => s.chatId === chatId);
+        const sportName = sport?.name || "Tribe Chat";
+        setDisplayName(sportName);
+      }
+    } catch (error) {
+      console.error("Failed to fetch display name:", error);
+      setDisplayName(type === "buddy" ? "Buddy Chat" : type === "game" ? "Game Chat" : "Tribe Chat");
+    }
+  };
+
+  fetchDisplayName();
+}, [chatId, type, chatName, clientId]);
+
   return (
     <div className={`mt-4 shadow-lg flex flex-col ${containerHeightClass}`}>
       {/* Header */}
@@ -144,21 +252,30 @@ export default function ChatRoomInner({
             <ChevronLeft className="h-6 w-6 text-gray-700" />
           </button>
           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
-            {chatId[0]}
+            <img
+              src={avatarUrl}
+              alt="avatar"
+              className="h-8 w-8 rounded-full object-cover"
+            />
           </div>
+
           <div>
-            {(activeTab === "My Game") && (
-              <p className="text-sm font-semibold">{chatId}</p>
-            )}
-            {(activeTab === "My Tribe") && (
-              <p className="text-sm font-semibold">{chatId}</p>
-            )}
-            {(activeTab === "My Buddy") && (
+            {activeTab === "My Buddy" && (
               <p className="text-sm font-semibold">{chatName}</p>
             )}
-            
+            {/* {activeTab === "My Game" && (
+              <p className="text-sm font-semibold">
+                {chatNames || "Game Chat"}
+              </p>
+            )}
+            {activeTab === "My Tribe" && (
+              <p className="text-sm font-semibold">
+                {chatNames || "Tribe Chat"}
+              </p>
+            )} */}
+            {displayName}
             <p className="text-xs text-gray-500">
-              {type === "buddy" ? "Online" : "Members: Divya, Alok"}
+              {type === "buddy" ? "Online" : ""}
             </p>
           </div>
         </div>
@@ -193,12 +310,8 @@ export default function ChatRoomInner({
               : "";
 
             // Dummy avatar url (replace with msg.avatar if you have)
-            const avatarUrl =
-              msg.avatarUrl ||
-              // "https://ui-avatars.com/api/?name=" +
-              //   encodeURIComponent(msg.clientId || "U") +
-              //   "&background=0D8ABC&color=fff&size=32"
-              "https://randomuser.me/api/portraits/men/78.jpg";
+            const avatarUrlToShow = isMine ? undefined : avatarUrl;
+
             return (
               <div
                 key={idx}
@@ -207,15 +320,19 @@ export default function ChatRoomInner({
                 }`}
               >
                 {/* Avatar ONLY for incoming (not me) */}
+
                 {!isMine && (
                   <img
-                    src={avatarUrl}
+                    src={
+                      type === "buddy"
+                        ? avatarUrl
+                        : "https://randomuser.me/api/portraits/men/78.jpg"
+                    }
                     alt={msg.clientId}
                     className="w-7 h-7 rounded-full mr-2 mb-5 border-2 border-white shadow-sm object-cover"
                     style={{ alignSelf: "flex-start" }}
                   />
                 )}
-
                 <div
                   className={`relative max-w-[60%] min-w-[210px] px-3 py-1 rounded-2xl break-words whitespace-normal flex flex-col ${
                     isMine
@@ -224,9 +341,12 @@ export default function ChatRoomInner({
                   }`}
                 >
                   {/* Only show sender name if NOT me */}
+
                   {!isMine && msg.clientId && (
                     <div className="text-xs font-semibold text-blue-700 mb-1">
-                      {chatName}
+                      {type === "buddy"
+                        ? chatName
+                        : senderNames[msg.clientId] || "Loading..."}
                     </div>
                   )}
                   {/* Message text */}
