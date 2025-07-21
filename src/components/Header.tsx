@@ -22,6 +22,8 @@ export default function Header({
   showNotifications,
   isNotificationsOpen,
 }: HeaderProps) {
+  console.log("Render NotificationBell for tab:", activeTab);
+
   return (
     <div className="p-2 fixed top-0 w-full z-50 bg-gray-100 shadow-md rounded-b-2xl ">
       {/* Top Row with Back & Title */}
@@ -43,7 +45,7 @@ export default function Header({
       <button
         key={tab}
         onClick={() => setActiveTab?.(tab)}
-        className={`text-base font-bold px-3 pb-2 border-b-4 transition-all duration-200
+        className={`text-sm font-bold px-3 pb-2 border-b-4 transition-all duration-200
           ${
             // Show underline only if notifications NOT open AND this tab is active
             !isNotificationsOpen && activeTab === tab
@@ -56,11 +58,12 @@ export default function Header({
       </button>
     ))}
   </div>
+  
 
   <NotificationBell
     hasNotification={true}
     onClick={showNotifications}
-    className={`transition-all duration-200 pb-2 border-b-4 ${
+    className={`transition-all duration-200 pb-2 border-b-4 left-4 top-1 ${
       isNotificationsOpen ? "border-black" : "border-transparent"
     }`}
   />

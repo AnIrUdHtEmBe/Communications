@@ -37,4 +37,24 @@ utkersh and test2 are friends with each other
     "USER_EZRR97"
   ],
   "addHereTargetList": "faveUsers"
+
+    "GAME_VMDP84",
+    "GAME_FJUI85",
+    "GAME_WSRB55",
+    "GAME_BIDL42"
 }
+
+
+  "GAME_JAXQ66",
+    "GAME_SBWQ97",
+    "GAME_EPDC07",
+    "GAME_OWIR37"
+
+
+  {
+    "courtId": "COUR_AVYX43",
+    "startTime": "2025-07-17T05:30:00",
+    "endTime": "2025-07-17T06:30:00",
+    "gameId": "GAME_JAXQ66",
+    "chatId": "CHAT_POGE51"
+  },

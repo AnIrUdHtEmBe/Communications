@@ -14,6 +14,7 @@ interface ChatCardProps {
   onAccept?: () => void;
   onDecline?: () => void;
   onJoin?: () => void;
+  alwaysShowCount?: any;
 }
 
 const ChatCard: React.FC<ChatCardProps> = ({
@@ -28,6 +29,7 @@ const ChatCard: React.FC<ChatCardProps> = ({
   onAccept,
   onDecline,
   onJoin,
+  alwaysShowCount
 }) => {
   const normalizedActions = actions?.map((a) => a.toLowerCase()) || [];
 
@@ -64,10 +66,12 @@ const ChatCard: React.FC<ChatCardProps> = ({
           <span className="text-xs text-gray-500">{time || "\u00A0"}</span>
           <div
             className={`mt-1 ${
-              count > 0 ? "bg-gray-300 text-black" : "invisible"
+              alwaysShowCount || count > 0
+                ? "bg-gray-300 text-black"
+                : "invisible"
             } text-xs w-5 h-5 font-semibold flex items-center justify-center rounded-full`}
           >
-            {count > 0 ? count : "\u00A0"}
+              {alwaysShowCount || count > 0 ? count : "\u00A0"}
           </div>
         </div>
       </div>

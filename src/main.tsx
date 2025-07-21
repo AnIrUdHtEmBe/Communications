@@ -42,10 +42,18 @@ export const ClientIdContext = createContext<string>("");
 function Root() {
   const [clientId, setClientId] = useState<string>("");
 
-  useEffect(() => {
-    // Generate UUID once on mount
-    setClientId("UTKERSH");
-  }, []);
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const idFromUrl = params.get("clientId");
+
+  if (idFromUrl) {
+    setClientId(idFromUrl);
+  } else {
+    // fallback if not provided in URL
+    setClientId("default-client-" + uuidv4());
+  }
+}, []);
+
 
   if (!clientId) return null; // or loading spinner
 

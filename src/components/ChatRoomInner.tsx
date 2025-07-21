@@ -4,11 +4,15 @@ import { useMessages } from "@ably/chat/react";
 import { useContext } from "react";
 import { ClientIdContext } from "../main";
 
+
 import { ChatMessageEventType } from "@ably/chat";
+import axios from "axios";
+import { API_BASE_URL } from "./ApiBaseUrl";
 
 export interface ChatRoomProps {
   type?: "buddy" | "game" | "tribe";
   chatId: string;
+  chatNames?: string;
   goBack: () => void;
   activeTab?: string;
   roomName?: string;
@@ -33,7 +37,13 @@ function isYesterday(date: Date) {
   );
 }
 
-export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatRoomProps) {
+export default function ChatRoomInner({
+  type,
+  chatId,
+  chatNames,
+  goBack,
+  activeTab,
+}: ChatRoomProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,7 +63,22 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
   //   },
   // });
 
-  const containerHeightClass = activeTab === "My Tribe" ? "h-[83vh]" : "h-[80vh]";
+  const [chatName, setChatName] = useState<string | null>(null);
+
+  const fetchChatName = async (chatId: string) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/human/${chatId}`
+      );
+      setChatName(response.data.name); // ✅ update state
+    } catch (err) {
+      console.error("Failed to fetch chat name", err);
+      setChatName("Unknown");
+    }
+  };
+
+  const containerHeightClass =
+    activeTab === "My Tribe" ? "h-[83vh]" : "h-[80vh]";
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
@@ -85,7 +110,7 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
 
   const sendMessage = () => {
     if (!inputValue.trim()) return;
-    send({ text: inputValue.trim()}).catch((err) =>
+    send({ text: inputValue.trim() }).catch((err) =>
       console.error("Send error", err)
     );
     setInputValue("");
@@ -94,6 +119,10 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    fetchChatName(chatId);
+  }, [chatId]);
 
   const lastMsgTimestamp = messages.length
     ? new Date(messages[messages.length - 1].timestamp)
@@ -105,8 +134,6 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
   } else if (!isToday(lastMsgTimestamp)) {
     dateLabel = lastMsgTimestamp.toLocaleDateString();
   }
-
-  
 
   return (
     <div className={`mt-4 shadow-lg flex flex-col ${containerHeightClass}`}>
@@ -120,7 +147,16 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
             {chatId[0]}
           </div>
           <div>
-            <p className="text-sm font-semibold">{chatId}</p>
+            {(activeTab === "My Game") && (
+              <p className="text-sm font-semibold">{chatId}</p>
+            )}
+            {(activeTab === "My Tribe") && (
+              <p className="text-sm font-semibold">{chatId}</p>
+            )}
+            {(activeTab === "My Buddy") && (
+              <p className="text-sm font-semibold">{chatName}</p>
+            )}
+            
             <p className="text-xs text-gray-500">
               {type === "buddy" ? "Online" : "Members: Divya, Alok"}
             </p>
@@ -137,7 +173,11 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
       {/* Messages */}
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-        {loading && <p className="rounded-lg bg-blue-50 w-fit p-2">Loading messages.....</p>}
+        {loading && (
+          <p className="rounded-lg bg-blue-50 w-fit p-2">
+            Loading messages.....
+          </p>
+        )}
         {[...messages]
           .sort(
             (a, b) =>
@@ -145,19 +185,60 @@ export default function ChatRoomInner({ type, chatId, goBack, activeTab }: ChatR
           )
           .map((msg: any, idx) => {
             const isMine = msg.clientId === clientsIds;
-            console.log("msg.clientId:", msg.clientId);
+            const timestamp = msg.timestamp
+              ? new Date(msg.timestamp).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "";
 
-
+            // Dummy avatar url (replace with msg.avatar if you have)
+            const avatarUrl =
+              msg.avatarUrl ||
+              // "https://ui-avatars.com/api/?name=" +
+              //   encodeURIComponent(msg.clientId || "U") +
+              //   "&background=0D8ABC&color=fff&size=32"
+              "https://randomuser.me/api/portraits/men/78.jpg";
             return (
               <div
                 key={idx}
-                className={`max-w-[60%] px-3 py-2 text-sm rounded-2xl break-words whitespace-normal ${
-                  isMine
-                    ? "bg-green-200 text-gray-800 rounded-br-none ml-auto"
-                    : "bg-blue-100 text-gray-900 rounded-bl-none"
+                className={`flex items-end ${
+                  isMine ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.text}
+                {/* Avatar ONLY for incoming (not me) */}
+                {!isMine && (
+                  <img
+                    src={avatarUrl}
+                    alt={msg.clientId}
+                    className="w-7 h-7 rounded-full mr-2 mb-5 border-2 border-white shadow-sm object-cover"
+                    style={{ alignSelf: "flex-start" }}
+                  />
+                )}
+
+                <div
+                  className={`relative max-w-[60%] min-w-[210px] px-3 py-1 rounded-2xl break-words whitespace-normal flex flex-col ${
+                    isMine
+                      ? "bg-green-100 text-gray-900 rounded-br-none ml-auto"
+                      : "bg-blue-50 text-gray-900 rounded-bl-none"
+                  }`}
+                >
+                  {/* Only show sender name if NOT me */}
+                  {!isMine && msg.clientId && (
+                    <div className="text-xs font-semibold text-blue-700 mb-1">
+                      {chatName}
+                    </div>
+                  )}
+                  {/* Message text */}
+                  <div className="text-gray-900">{msg.text}</div>
+                  {/* Timestamp: bottom right of bubble (even for multi-line) */}
+                  <div
+                    className="text-[11px] mt-1 text-gray-500 self-end"
+                    style={{ minWidth: 60, textAlign: "right" }}
+                  >
+                    {timestamp}
+                  </div>
+                </div>
               </div>
             );
           })}
