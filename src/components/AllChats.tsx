@@ -222,7 +222,7 @@ const AllChats = ({}: AllChatsProps) => {
                 goBack={() => setActiveChat(null)}
                 activeTab={activeTab}
                 roomName={getRoomName(chatType, clientId, activeChat!)}
-                // chatNames={}
+                chatNames={""}
               />
             ) : (
               <ChatList

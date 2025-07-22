@@ -131,7 +131,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
       setBuddyAvatars(avatarMap);
 
       const buddiesFromAPI: Buddy[] = faveUsersResponses.map((res) => ({
-        name: res.data.name || "Unknown",
+        name: res.data.name || "Admin",
         id: res.data.userId,
         message: res.data.lastMessage || "Hi there",
         count: 0,

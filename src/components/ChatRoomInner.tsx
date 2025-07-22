@@ -100,7 +100,7 @@ export default function ChatRoomInner({
       setChatName(response.data.name); // ✅ update state
     } catch (err) {
       console.error("Failed to fetch chat name", err);
-      setChatName("Unknown");
+      setChatName("Admin");
     }
   };
 
@@ -110,13 +110,13 @@ export default function ChatRoomInner({
 
     try {
       const response = await axios.get(`${API_BASE_URL}/human/${senderId}`);
-      const name = response.data.name || "Unknown";
+      const name = response.data.name || "Admin";
       setSenderNames((prev) => ({ ...prev, [senderId]: name }));
       return name;
     } catch (err) {
       console.error("Failed to fetch sender name", err);
-      setSenderNames((prev) => ({ ...prev, [senderId]: "Unknown" }));
-      return "Unknown";
+      setSenderNames((prev) => ({ ...prev, [senderId]: "Admin" }));
+      return "Admin";
     }
   };
 
