@@ -370,7 +370,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
             label="Pending Requests"
             onClick={() => setShowPending(true)}
             count={pendingRequestsCount > 0 ? pendingRequestsCount : 0}
-            time="2:45 PM"
+            time=""
             icon={<MessageIcon />}
             alwaysShowCount
           />
@@ -381,7 +381,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
               key={user.name}
               label={user.name}
               count={user.count}
-              time={buddyTimestamps[user.id] || user.time}
+              time=""
               message={user.message}
               onClick={() => {
                 onOpenChat(user.id);
@@ -428,9 +428,11 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                   setChatName(group.sport.split(" - ")[0]);
                   setTimeout(() => {
                     console.log("timeout");
+                    console.log("Clicked on game for session");
+
+                    sessionStorage.setItem("gameIdFromChat", group.gameId);
                     onOpenChat(group.gameChatId);
                   }, 0);
-                  
 
                   setPastGames(false);
                 }}
@@ -470,7 +472,6 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                   console.log("timeout");
                   onOpenChat(tribe.sportChatId);
                 }, 0);
-                
 
                 setPastGames(false);
               }}

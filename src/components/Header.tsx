@@ -54,7 +54,7 @@ export default function Header({
           }
         `}
       >
-        {tab}
+        {tab.replace(/^My\s*/, '')}
       </button>
     ))}
   </div>

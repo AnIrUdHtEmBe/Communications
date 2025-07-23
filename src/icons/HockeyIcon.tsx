@@ -1,20 +1,6 @@
-const HockeyIcon = () => {
-    return (
-        <div>
-        <div className="w-8 h-8">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          className="w-full h-full text-gray-700"
-        >
-          {/* Simplified hockey stick */}
-          <rect x="5" y="15" width="2" height="7" rx="1" ry="1" />
-          <path d="M7 20 L20 5 L22 7 L9 22 Z" />
-        </svg>
-      </div>
-    </div>
-    )
-}
-
-export default HockeyIcon
+export const HockeyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+    <path d="M2 17h20v2H2zM3.5 14L12 5.5 20.5 14H18l-6-6-6 6H3.5z"/>
+    <circle cx="12" cy="20" r="1"/>
+  </svg>
+);

@@ -1,19 +1,7 @@
-const TennisIcon = () => {
-    return(
-        <div className="w-8 h-8">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          className="w-full h-full text-gray-700"
-        >
-          {/* Simple tennis ball */}
-          <circle cx="12" cy="12" r="10" stroke="black" strokeWidth="1" fill="none" />
-          <path d="M6 6 C10 10, 14 14, 18 18" stroke="currentColor" strokeWidth="2" fill="none" />
-          <path d="M6 18 C10 14, 14 10, 18 6" stroke="currentColor" strokeWidth="2" fill="none" />
-        </svg>
-      </div>
-    )
-}
-
-export default TennisIcon;
+export const TennisIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 2v20M2 12h20" stroke="white" strokeWidth="2" fill="none"/>
+    <path d="M7 7l10 10M7 17L17 7" stroke="white" strokeWidth="1" fill="none"/>
+  </svg>
+);

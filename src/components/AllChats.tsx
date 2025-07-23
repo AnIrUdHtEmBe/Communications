@@ -2,16 +2,36 @@ import { useContext, useEffect, useState } from "react";
 import Header from "../components/Header";
 import ChatList from "./ChatList";
 import ChatRoom from "../components/ChatRoom";
-import FootBallIcon from "../icons/FootballIcon";
-import CricketIcon from "../icons/CricketIcon";
-import TennisIcon from "../icons/TennisIcon";
-import HockeyIcon from "../icons/HockeyIcon";
-import BadmintonIcon from "../icons/BadmintonIcon";
+// import FootBallIcon from "../icons/FootballIcon";
+// import CricketIcon from "../icons/CricketIcon";
+// import TennisIcon from "../icons/TennisIcon";
+// import HockeyIcon from "../icons/HockeyIcon";
+// import BadmintonIcon from "../icons/BadmintonIcon";
 import ChatCard from "./ChatCard";
 import { ChatRoomProvider } from "@ably/chat/react";
 import { ClientIdContext } from "../main";
 import axios from "axios";
 import { API_BASE_URL } from "./ApiBaseUrl";
+import {
+  BoxCricketIcon,
+  PhysioIcon,
+  RollerSkatingIcon,
+  SquashIcon,
+  BasketballIcon,
+  CricketNetsIcon,
+  StrengthIcon,
+  YogaIcon,
+  SkateboardingIcon,
+  PickleballIcon,
+  BodybuildingIcon,
+  SwimmingIcon,
+  FootballIcon,
+  BadmintonIcon,
+  CricketIcon,
+  TennisIcon,
+  HockeyIcon,
+} from "../icons/Icons";
+// Add these imports at the top with your existing imports
 
 type AllChatsProps = {
   activeRoom?: string; // optional as not used here
@@ -19,52 +39,32 @@ type AllChatsProps = {
 };
 
 const AllChats = ({}: AllChatsProps) => {
-  // function RoomStatus() {
-  //   const [currentRoomStatus, setCurrentRoomStatus] = useState("");
-  //   const { roomName } = useRoom({
-  //     onStatusChange: (status) => {
-  //       setCurrentRoomStatus(status.current);
-  //     },
-  //   });
-  //   console.log("roomname", roomName);
-
-  //   return (
-  //     <div className="flex-1 border-1 border-blue-500">
-  //       <ConnectionStatus />
-  //       <p className="mt-2">
-  //         Status: {currentRoomStatus}
-  //         <br />
-  //         Room: {roomName}
-  //       </p>
-  //     </div>
-  //   );
-  // }
-
-  // function ConnectionStatus() {
-  //   const { currentStatus } = useChatConnection();
-  //   let i = 0;
-  //   console.log("new user", i + 1);
-  //   console.log(currentStatus, "currentStatus");
-  //   return (
-  //     <div className="p-4 text-center h-full border-gray-300 bg-gray-100">
-  //       <h2 className="text-lg font-semibold text-blue-500">
-  //         Ably Chat Connection
-  //       </h2>
-  //       <p className="mt-2">Connection: {currentStatus}!</p>
-  //     </div>
-  //   );
-  // }
-
   const [mySport, setMySports] = useState<any[]>([]);
+  // Add this state after your existing useState declarations
+  const [selectedSport, setSelectedSport] = useState<string | null>(null);
 
-  // Add this function to get appropriate icon for each sport
+  // Replace your existing getIconForSport function with this:
   const getIconForSport = (sportName: string) => {
     const name = sportName.toLowerCase();
+    if (name.includes("box cricket")) return BoxCricketIcon;
+    if (name.includes("physio")) return PhysioIcon;
+    if (name.includes("roller skating")) return RollerSkatingIcon;
+    if (name.includes("squash")) return SquashIcon;
+    if (name.includes("basketball")) return BasketballIcon;
+    if (name.includes("cricket practice nets") || name.includes("cricket nets"))
+      return CricketNetsIcon;
+    if (name.includes("strength")) return StrengthIcon;
+    if (name.includes("football")) return FootballIcon;
+    if (name.includes("yoga")) return YogaIcon;
+    if (name.includes("badminton")) return BadmintonIcon;
+    if (name.includes("skateboarding")) return SkateboardingIcon;
+    if (name.includes("pickleball")) return PickleballIcon;
+    if (name.includes("bodybuilding")) return BodybuildingIcon;
+    if (name.includes("swimming") || name.includes("swimmining"))
+      return SwimmingIcon;
     if (name.includes("cricket")) return CricketIcon;
-    if (name.includes("football")) return FootBallIcon;
     if (name.includes("tennis")) return TennisIcon;
     if (name.includes("hockey")) return HockeyIcon;
-    if (name.includes("badminton")) return BadmintonIcon;
     // Default icon for unmatched sports
     return () => <div className="text-xl">🏃</div>;
   };
@@ -72,6 +72,9 @@ const AllChats = ({}: AllChatsProps) => {
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("My Buddy");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<
+  { id: number; text: string; actions: string[], userId: string }[]
+>([]);
 
   const isInChatRoom = activeChat !== null;
 
@@ -115,6 +118,45 @@ const AllChats = ({}: AllChatsProps) => {
     return `room-${chatType}-${sorted[0]}-${sorted[1]}`;
   }
 
+useEffect(() => {
+  async function fetchPendingNotifications() {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/human/${clientId}`);
+      const pendingRequestIds: string[] = res.data.pendingRequest || [];
+      
+      // Fetch all requester names in parallel
+      const notifications = await Promise.all(
+  pendingRequestIds.map(async (userId, index) => {
+    try {
+      const userRes = await axios.get(`https://play-os-backendv2.forgehub.in/human/${userId}`);
+      const requesterName = userRes.data.name || "Unknown";
+      return {
+        id: index + 1,
+        userId: userId,
+        text: `You have a pending friend request from ${requesterName}`,
+        actions: ["Accept", "Decline"],
+      };
+    } catch {
+      return {
+        id: index + 1,
+        userId: userId,
+        text: `You have a pending friend request from Unknown`,
+        actions: ["Accept", "Decline"],
+      };
+    }
+  })
+);
+
+      
+      setPendingRequests(notifications);
+    } catch (error) {
+      setPendingRequests([]);
+    }
+  }
+  fetchPendingNotifications();
+}, [clientId]);
+
+
   // Add this useEffect to fetch sports when type is tribe
   useEffect(() => {
     if (chatType === "tribe") {
@@ -123,6 +165,7 @@ const AllChats = ({}: AllChatsProps) => {
           const res = await axios.get(`${API_BASE_URL}/sports/all`);
           const data = res.data;
           setMySports(data);
+          setActiveChat("CHAT_SOTD47");
         } catch (error) {
           console.error("Error fetching sport details", error);
           setMySports([]);
@@ -131,6 +174,47 @@ const AllChats = ({}: AllChatsProps) => {
       fetchSportDetails();
     }
   }, [chatType]);
+
+
+  const acceptNotification = async (userIdToAdd: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
+      userId: clientId,
+      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
+      addHereTargetList: "faveUsers",
+    });
+    console.log("Accepted user response:", response.data);
+
+    // Optionally, update local notifications state to remove accepted user
+   setPendingRequests((prev) =>
+  prev.filter((notif) => notif.userId !== userIdToAdd)
+);
+
+
+  } catch (error) {
+    console.error("Error accepting user:", error);
+  }
+};
+
+const deleteNotification = async (userIdToAdd: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
+      userId: clientId,
+      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
+      addHereTargetList: "decline",
+    });
+    console.log("Accepted user response:", response.data);
+
+    // Optionally, update local notifications state to remove accepted user
+setPendingRequests((prev) =>
+  prev.filter((notif) => notif.userId !== userIdToAdd)
+);
+
+
+  } catch (error) {
+    console.error("Error accepting user:", error);
+  }
+};
 
   return (
     <>
@@ -143,7 +227,9 @@ const AllChats = ({}: AllChatsProps) => {
           setShowNotifications(false); // Hide notifications when switching tabs
         }}
         showBackButton={true}
-        onBackClick={() => setActiveChat(null)}
+        onBackClick={() =>
+          (window.location.href = `https://playbookingv2.forgehub.in/`)
+        }
         showNotifications={() => setShowNotifications(true)}
         isNotificationsOpen={showNotifications}
       />
@@ -161,15 +247,15 @@ const AllChats = ({}: AllChatsProps) => {
             </button>
           </div>
 
-          {dummyNotifications.map((n) => (
+          {pendingRequests.map((n) => (
             <ChatCard
               key={n.id}
               label={n.text}
               count={1}
-              time={"2:00 PM"}
+              time={""}
               actions={n.actions} // assume array like ["accept", "decline"]
-              onAccept={() => console.log("Accepted", n.id)}
-              onDecline={() => console.log("Declined", n.id)}
+              onAccept={() => acceptNotification(n.userId)}
+              onDecline={() => deleteNotification(n.userId)}
             />
           ))}
         </div>
@@ -192,9 +278,9 @@ const AllChats = ({}: AllChatsProps) => {
                 return (
                   <div
                     key={sport.name}
-                    onClick={() => setActiveChat(null)}
+                    onClick={() => setActiveChat(sport.chatId)}
                     className={`flex-shrink-0 cursor-pointer rounded-md w-14 h-14 mx-2 flex items-center justify-center p-3 transition ${
-                      activeChat === sport.name
+                      activeChat === sport.chatId
                         ? "bg-[#00f0ff] shadow-md"
                         : "bg-gray-200"
                     }`}
@@ -217,6 +303,7 @@ const AllChats = ({}: AllChatsProps) => {
           >
             {isInChatRoom ? (
               <ChatRoom
+              key={getRoomName(chatType, clientId, activeChat!)}
                 type={chatType}
                 chatId={activeChat!}
                 goBack={() => setActiveChat(null)}

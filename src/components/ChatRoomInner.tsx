@@ -64,6 +64,7 @@ export default function ChatRoomInner({
   // In ChatRoomInner.tsx - Add this state after existing useState
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const [displayName, setDisplayName] = useState<string>("");
+  const [showMessage, setShowMessage] = useState(false);
 
   const [chatName, setChatName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(
@@ -121,7 +122,7 @@ export default function ChatRoomInner({
   };
 
   const containerHeightClass =
-    activeTab === "My Tribe" ? "h-[83vh]" : "h-[80vh]";
+    activeTab === "My Tribe" ? "h-[70vh]" : "h-[80vh]";
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
@@ -198,55 +199,74 @@ export default function ChatRoomInner({
     }
   }, [messages, type]);
 
-useEffect(() => {
-  const fetchDisplayName = async () => {
-    try {
-      if (type === "buddy") {
-        setDisplayName(chatName || "Buddy Chat");
-      } else if (type === "game") {
-        // Find game by matching chatId in the user's chat mappings
-        const chatRes = await axios.get(`${API_BASE_URL}/human/getChatId/${clientId}`);
-        const mapping = chatRes.data.find((item: any) => item.chatId === chatId);
-        
-        if (mapping) {
-          const gameResponse = await axios.get(`${API_BASE_URL}/game/${mapping.gameId}`);
-          const sport = gameResponse.data.sport || "Unknown Sport";
-          
-          // Format sport name with date (same as ChatList)
-          const gameDate = gameResponse.data.startTime
-            ? new Date(gameResponse.data.startTime).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : "";
-          const formattedSportName = gameDate
-            ? `${sport} - ${gameDate}`
-            : sport;
-            
-          setDisplayName(formattedSportName);
-        } else {
-          setDisplayName("Game Chat");
-        }
-      } else if (type === "tribe") {
-        // Get all sports and find the one with matching chatId
-        const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
-        const sport = sportsResponse.data.find((s: any) => s.chatId === chatId);
-        const sportName = sport?.name || "Tribe Chat";
-        setDisplayName(sportName);
-      }
-    } catch (error) {
-      console.error("Failed to fetch display name:", error);
-      setDisplayName(type === "buddy" ? "Buddy Chat" : type === "game" ? "Game Chat" : "Tribe Chat");
-    }
-  };
+  useEffect(() => {
+    const fetchDisplayName = async () => {
+      try {
+        if (type === "buddy") {
+          setDisplayName(chatName || "Buddy Chat");
+        } else if (type === "game") {
+          // Find game by matching chatId in the user's chat mappings
+          const chatRes = await axios.get(
+            `${API_BASE_URL}/human/getChatId/${clientId}`
+          );
+          const mapping = chatRes.data.find(
+            (item: any) => item.chatId === chatId
+          );
 
-  fetchDisplayName();
-}, [chatId, type, chatName, clientId]);
+          if (mapping) {
+            const gameResponse = await axios.get(
+              `${API_BASE_URL}/game/${mapping.gameId}`
+            );
+            const sport = gameResponse.data.sport || "Unknown Sport";
+
+            // Format sport name with date (same as ChatList)
+            const gameDate = gameResponse.data.startTime
+              ? new Date(gameResponse.data.startTime).toLocaleDateString(
+                  "en-US",
+                  {
+                    month: "short",
+                    day: "numeric",
+                  }
+                )
+              : "";
+            const formattedSportName = gameDate
+              ? `${sport} - ${gameDate}`
+              : sport;
+
+            setDisplayName(formattedSportName);
+          } else {
+            setDisplayName("Game Chat");
+          }
+        } else if (type === "tribe") {
+          // Get all sports and find the one with matching chatId
+          const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
+          const sport = sportsResponse.data.find(
+            (s: any) => s.chatId === chatId
+          );
+          const sportName = sport?.name || "Tribe Chat";
+          setDisplayName(sportName);
+        }
+      } catch (error) {
+        console.error("Failed to fetch display name:", error);
+        setDisplayName(
+          type === "buddy"
+            ? "Buddy Chat"
+            : type === "game"
+            ? "Game Chat"
+            : "Tribe Chat"
+        );
+      }
+    };
+
+    fetchDisplayName();
+  }, [chatId, type, chatName, clientId]);
 
   return (
-    <div className={`mt-4 shadow-lg flex flex-col ${containerHeightClass}`}>
+    <div
+      className={`mt-4 shadow-lg flex flex-col ${containerHeightClass} relative`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl">
+      <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
         <div className="flex items-center gap-2">
           <button onClick={goBack}>
             <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -263,23 +283,27 @@ useEffect(() => {
             {activeTab === "My Buddy" && (
               <p className="text-sm font-semibold">{chatName}</p>
             )}
-            {/* {activeTab === "My Game" && (
-              <p className="text-sm font-semibold">
-                {chatNames || "Game Chat"}
-              </p>
+            {activeTab !== "My Buddy" && (
+              <>
+                {displayName}
+                <p className="text-xs text-gray-500">
+                  {type === "buddy" ? "Online" : ""}
+                </p>
+              </>
             )}
-            {activeTab === "My Tribe" && (
-              <p className="text-sm font-semibold">
-                {chatNames || "Tribe Chat"}
-              </p>
-            )} */}
-            {displayName}
-            <p className="text-xs text-gray-500">
-              {type === "buddy" ? "Online" : ""}
-            </p>
           </div>
         </div>
-        <MoreHorizontal className="h-5 w-5 text-gray-600" />
+        <button
+          onClick={() => {
+            window.location.href =
+              "https://playbookingv2.forgehub.in/event-participants-details";
+          }}
+          type="button" // good practice to prevent unintended form submits
+          className="bg-blue-500 text-white text-xs font-semibold px-1 py-1 rounded shadow transition"
+
+        >
+          Game Details
+        </button>
       </div>
 
       {/* Date label */}
@@ -366,7 +390,7 @@ useEffect(() => {
       </div>
 
       {/* Input */}
-      <div className="flex items-center px-4 py-2 gap-2">
+      <div className="flex items-center px-4 py-2 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
         <Plus className="w-5 h-5 text-gray-500" />
         <input
           value={inputValue}
