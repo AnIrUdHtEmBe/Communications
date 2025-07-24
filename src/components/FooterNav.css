@@ -1,0 +1,52 @@
+.footer-main-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: #000;
+  border-radius: 50px;
+  position: fixed;   /* changed from sticky to fixed */
+  bottom: 10px;      /* sets the footer 10px above the bottom of viewport */
+  left: 5%;          /* keep your left offset */
+  right: 0;
+  width: 90%;        /* adjust width to fit between left and right */
+  max-width: 760px;
+  height: 60px;      /* Changed from 80%, since height in % relative to fixed can cause issues */
+  z-index: 1000;     /* ensure it's above other content */
+}
+
+
+.footer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  justify-content: center;
+}
+
+.footer-item .icon {
+  font-size: 1.5rem;
+  color: #8f8f8f;
+}
+
+.footer-item.active .icon,
+.footer-item.active span {
+  color: #01c1f5;
+}
+
+.footer-item span {
+  font-family: "Inter", sans-serif;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+  font-size: 0.625rem;
+  color: #8f8f8f;
+}
+
+.footer-main-container a {
+  text-decoration: none;
+}
+
+@media (min-width: 769px) {
+  .footer-main-container {
+    display: none;
+}
+}

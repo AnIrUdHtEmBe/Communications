@@ -366,6 +366,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
 
   return (
     <>
+    <div className="pb-18">
       {type === "buddy" && (
         <>
           <ChatCard
@@ -500,6 +501,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
           chatNames={chatName}
         />
       )}
+      </div>
     </>
   );
 }

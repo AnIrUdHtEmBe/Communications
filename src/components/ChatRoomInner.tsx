@@ -263,7 +263,7 @@ export default function ChatRoomInner({
 
   return (
     <div
-      className={` shadow-lg flex flex-col ${containerHeightClass} relative`}
+      className={` shadow-lg flex pb-18 flex-col ${containerHeightClass} relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
@@ -296,7 +296,7 @@ export default function ChatRoomInner({
         <button
           onClick={() => {
             window.location.href =
-              "https://playbookingv2.forgehub.in/event-participants-details";
+              `https://playbookingv2.forgehub.in/event-participants-details?gameId=${sessionStorage.getItem("gameId")}`;
           }}
           type="button" // good practice to prevent unintended form submits
           className="bg-blue-500 text-white text-xs font-semibold px-1 py-1 rounded shadow transition"

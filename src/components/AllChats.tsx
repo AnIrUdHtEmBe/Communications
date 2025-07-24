@@ -268,7 +268,18 @@ useEffect(() => {
     try {
       const res = await axios.get(`${API_BASE_URL}/human/${clientId}`);
       const pendingRequestIds: string[] = res.data.pendingRequest || [];
-      
+      if (pendingRequestIds.length === 0) {
+        // No pending requests - set notification accordingly
+        setPendingRequests([
+          {
+            id: 0,
+            userId: "", // or null
+            text: "You have no pending requests",
+            actions: [], // no actions
+          },
+        ]);
+        return; // No need to proceed further
+      }
       // Fetch all requester names in parallel
       const notifications = await Promise.all(
   pendingRequestIds.map(async (userId, index) => {
@@ -381,30 +392,40 @@ setPendingRequests((prev) =>
 
       {/* Notification Modal */}
       {showNotifications && (
-        <div className="fixed mt-48 left-4 right z-50  shadow-lg p-4 ">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-semibold">Notifications</h2>
-            <button
-              onClick={() => setShowNotifications(false)}
-              className="text-sm text-gray-500"
-            >
-              Close
-            </button>
-          </div>
+  <div className="fixed mt-48 left-4 right z-50 shadow-lg p-4">
+    <div className="flex justify-between items-center mb-2">
+      <h2 className="text-lg font-semibold">Notifications</h2>
+      <button
+        onClick={() => setShowNotifications(false)}
+        className="text-sm text-gray-500"
+      >
+        Close
+      </button>
+    </div>
 
-          {pendingRequests.map((n) => (
-            <ChatCard
-              key={n.id}
-              label={n.text}
-              count={1}
-              time={""}
-              actions={n.actions} // assume array like ["accept", "decline"]
-              onAccept={() => acceptNotification(n.userId)}
-              onDecline={() => deleteNotification(n.userId)}
-            />
-          ))}
-        </div>
-      )}
+    {pendingRequests.length === 0 ? (
+      <ChatCard
+        label="No notifications"
+        count={0}
+        time=""
+        actions={[]}  // no actions 
+      />
+    ) : (
+      pendingRequests.map((n) => (
+        <ChatCard
+          key={n.id}
+          label={n.text}
+          count={1}
+          time=""
+          actions={n.actions} // assume array like ["accept", "decline"]
+          onAccept={() => acceptNotification(n.userId)}
+          onDecline={() => deleteNotification(n.userId)}
+        />
+      ))
+    )}
+  </div>
+)}
+
 
       {!showNotifications && (
         <>
