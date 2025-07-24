@@ -25,7 +25,7 @@ export default function Header({
   console.log("Render NotificationBell for tab:", activeTab);
 
   return (
-    <div className="p-2 fixed top-0 w-full z-50 bg-gray-100 shadow-md rounded-b-2xl ">
+    <div className="p-1 fixed top-0 w-full z-50 bg-gray-100 shadow-md rounded-b-2xl ">
       {/* Top Row with Back & Title */}
       <div className="flex items-center px-4 py-8 font-bold">
         {showBackButton ? (

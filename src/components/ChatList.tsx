@@ -37,6 +37,7 @@ type GameSummary = {
   members: string;
   count: number;
   time: string;
+  timeFormatted: any;
   message: string;
   gameChatId: string;
 };
@@ -106,7 +107,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
       const avatarPromises = faveUserIds.map(async (userId: string) => {
         try {
           const response = await axios.post(
-            "https://play-os-backendv2.forgehub.in/human/human/get-photo",
+            `${API_BASE_URL}/human/human/get-photo`,
             `${userId}`
           );
           return {
@@ -209,6 +210,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                 members: membersNames,
                 count,
                 time,
+                timeFormatted: gameDate ? new Date(data.startTime).toISOString() : "",
                 message: "",
                 gameChatId, // add chatId here
               });
@@ -416,7 +418,10 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
           {myGame.length === 0 ? (
             <div className="text-sm text-gray-500 p-4">No games found</div>
           ) : (
-            myGame.map((group) => (
+            myGame
+  .slice() // clone array
+  .sort((a, b) => new Date(b.timeFormatted).getTime() - new Date(a.timeFormatted).getTime())
+  .map((group) => (
               // In ChatList.tsx - Replace game ChatCard with dynamic time
               <ChatCard
                 key={group.gameId}
@@ -430,7 +435,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                     console.log("timeout");
                     console.log("Clicked on game for session");
 
-                    sessionStorage.setItem("gameIdFromChat", group.gameId);
+                    sessionStorage.setItem("gameId", group.gameId);
                     onOpenChat(group.gameChatId);
                   }, 0);
 

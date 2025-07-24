@@ -1,1 +1,1 @@
-export const API_BASE_URL = "https://play-os-backendv2.forgehub.in"
+export const API_BASE_URL = "https://play-os-backend.forgehub.in"

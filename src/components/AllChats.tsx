@@ -12,26 +12,144 @@ import { ChatRoomProvider } from "@ably/chat/react";
 import { ClientIdContext } from "../main";
 import axios from "axios";
 import { API_BASE_URL } from "./ApiBaseUrl";
-import {
-  BoxCricketIcon,
-  PhysioIcon,
-  RollerSkatingIcon,
-  SquashIcon,
-  BasketballIcon,
-  CricketNetsIcon,
-  StrengthIcon,
-  YogaIcon,
-  SkateboardingIcon,
-  PickleballIcon,
-  BodybuildingIcon,
-  SwimmingIcon,
-  FootballIcon,
-  BadmintonIcon,
-  CricketIcon,
-  TennisIcon,
-  HockeyIcon,
-} from "../icons/Icons";
+// import {
+//   BoxCricketIcon,
+//   PhysioIcon,
+//   RollerSkatingIcon,
+//   SquashIcon,
+//   BasketballIcon,
+//   CricketNetsIcon,
+//   StrengthIcon,
+//   YogaIcon,
+//   SkateboardingIcon,
+//   PickleballIcon,
+//   BodybuildingIcon,
+//   SwimmingIcon,
+//   FootballIcon,
+//   BadmintonIcon,
+//   CricketIcon,
+//   TennisIcon,
+//   HockeyIcon,
+// } from "../icons/Icons";
 // Add these imports at the top with your existing imports
+
+// import { IoFootballOutline } from 'react-icons/io5';
+// import { GiBodyBalance } from 'react-icons/gi'; // Game Icons
+
+
+// import {
+//   FaSwimmer,
+//   FaDumbbell,
+//   FaBasketballBall,
+//   FaSkating,
+// } from 'react-icons/fa';
+// import {
+//   GiCricketBat,
+//   GiMuscleUp,
+//   GiMeditation ,
+//   GiTennisRacket,
+//   GiTennisCourt,
+// } from 'react-icons/gi';
+// import {
+//   MdSportsTennis,
+// } from 'react-icons/md';
+// import { TbSkateboard } from 'react-icons/tb';
+// import type { BadmintonIcon } from "../icons/BadmintonIcon";
+// import type { BasketballIcon } from "../icons/BasketBallIcon";
+// import type { BodybuildingIcon } from "../icons/BodyBuildingIcon";
+// import type { BoxCricketIcon } from "../icons/BoxCricketIcon";
+// import { CricketIcon } from "../icons/CricketIcon";
+// import type { CricketNetsIcon } from "../icons/CricketNetsIcon";
+// import type { FootballIcon } from "../icons/FootballIcon";
+// import { HockeyIcon } from "../icons/HockeyIcon";
+// import type { PhysioIcon } from "../icons/PhysioIcon";
+// import type { PickleballIcon } from "../icons/PickelballIcon";
+// import type { RollerSkatingIcon } from "../icons/RollerSkatingIcon";
+// import type { SkateboardingIcon } from "../icons/Skateboarding";
+// import type { SquashIcon } from "../icons/SquashIcon";
+// import type { StrengthIcon } from "../icons/StrengthIcon";
+// import type { SwimmingIcon } from "../icons/SwimmingIcon";
+// import { TennisIcon } from "../icons/TennisIcon";
+// import type { YogaIcon } from "../icons/YogaIcon";
+// import type { BadmintonIcon } from "../icons/BadmintonIcon";
+// import type { BasketballIcon } from "../icons/BasketBallIcon";
+// import type { BodybuildingIcon } from "../icons/BodyBuildingIcon";
+// import type { BoxCricketIcon } from "../icons/BoxCricketIcon";
+// import { CricketIcon } from "../icons/CricketIcon";
+// import type { CricketNetsIcon } from "../icons/CricketNetsIcon";
+// import { FootballIcon } from "../icons/FootballIcon";
+// import { HockeyIcon } from "../icons/HockeyIcon";
+// import type { PhysioIcon } from "../icons/PhysioIcon";
+// import type { PickleballIcon } from "../icons/PickelballIcon";
+// import type { RollerSkatingIcon } from "../icons/RollerSkatingIcon";
+// import type { SkateboardingIcon } from "../icons/Skateboarding";
+// import type { SquashIcon } from "../icons/SquashIcon";
+// import type { StrengthIcon } from "../icons/StrengthIcon";
+// import type { SwimmingIcon } from "../icons/SwimmingIcon";
+// import { TennisIcon } from "../icons/TennisIcon";
+// import type { YogaIcon } from "../icons/YogaIcon";
+
+import { IoFootballOutline } from 'react-icons/io5';
+import { GiBodyBalance } from 'react-icons/gi'; // Game Icons
+
+
+import {
+  FaSwimmer,
+  FaDumbbell,
+  FaBasketballBall,
+  FaSkating,
+} from 'react-icons/fa';
+import {
+  GiCricketBat,
+  GiMuscleUp,
+  GiMeditation ,
+  GiTennisRacket,
+  GiTennisCourt,
+} from 'react-icons/gi';
+import {
+  MdSportsTennis,
+} from 'react-icons/md';
+import { TbSkateboard } from 'react-icons/tb';
+import { HockeyIcon } from "../icons/HockeyIcon";
+export const PLAY_CONFIG = {
+  startTime: "6:00",
+  endTime: "24:00",
+  turfGap: 30,
+  TURF_BOX_BUFFER_HEIGHT: 40,
+};
+// turfGap is adjusted based on timeinterval if the timeinterval in timeConstants.ts is 30 then we set gap to 30
+
+const size = 100;
+
+export const DEFAULT_ICON_SIZE = size;
+
+export const games = [
+   { name: "Football 7 a side", icon:()=> <IoFootballOutline size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Box Cricket", icon: ()=> <GiCricketBat size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "yoga", icon:()=>  <GiMeditation size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "bodybuilding", icon:()=>  <GiMuscleUp size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "strength", icon:()=>  <FaDumbbell size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Swimmining", icon: ()=> <FaSwimmer size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Roller Skating", icon:()=>  <FaSkating size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Skateboarding", icon:()=>  <TbSkateboard size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Pickleball", icon:()=>  <GiTennisRacket size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Squash", icon: ()=> <GiTennisCourt size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Basketball", icon:()=>  <FaBasketballBall size={DEFAULT_ICON_SIZE-5} /> },
+  { name: "Badminton", icon:()=>  <MdSportsTennis size={DEFAULT_ICON_SIZE-5} /> },
+  {
+    name: "Cricket Practice Nets",
+    icon:()=>  (
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <GiCricketBat size={20} />
+        <GiTennisCourt size={20} />
+      </div>
+    ),
+  },
+  {	name:"Physio",icon:()=><GiBodyBalance size={DEFAULT_ICON_SIZE-5}  />  },
+];
+
+
+
 
 type AllChatsProps = {
   activeRoom?: string; // optional as not used here
@@ -44,30 +162,57 @@ const AllChats = ({}: AllChatsProps) => {
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
 
   // Replace your existing getIconForSport function with this:
-  const getIconForSport = (sportName: string) => {
-    const name = sportName.toLowerCase();
-    if (name.includes("box cricket")) return BoxCricketIcon;
-    if (name.includes("physio")) return PhysioIcon;
-    if (name.includes("roller skating")) return RollerSkatingIcon;
-    if (name.includes("squash")) return SquashIcon;
-    if (name.includes("basketball")) return BasketballIcon;
-    if (name.includes("cricket practice nets") || name.includes("cricket nets"))
-      return CricketNetsIcon;
-    if (name.includes("strength")) return StrengthIcon;
-    if (name.includes("football")) return FootballIcon;
-    if (name.includes("yoga")) return YogaIcon;
-    if (name.includes("badminton")) return BadmintonIcon;
-    if (name.includes("skateboarding")) return SkateboardingIcon;
-    if (name.includes("pickleball")) return PickleballIcon;
-    if (name.includes("bodybuilding")) return BodybuildingIcon;
-    if (name.includes("swimming") || name.includes("swimmining"))
-      return SwimmingIcon;
-    if (name.includes("cricket")) return CricketIcon;
-    if (name.includes("tennis")) return TennisIcon;
-    if (name.includes("hockey")) return HockeyIcon;
-    // Default icon for unmatched sports
-    return () => <div className="text-xl">🏃</div>;
-  };
+  // const getIconForSport = (sportName: string) => {
+  //   const name = sportName.toLowerCase();
+  //   if (name.includes("box cricket")) return BoxCricketIcon;
+  //   if (name.includes("physio")) return PhysioIcon;
+  //   if (name.includes("roller skating")) return RollerSkatingIcon;
+  //   if (name.includes("squash")) return SquashIcon;
+  //   if (name.includes("basketball")) return BasketballIcon;
+  //   if (name.includes("cricket practice nets") || name.includes("cricket nets"))
+  //     return CricketNetsIcon;
+  //   if (name.includes("strength")) return StrengthIcon;
+  //   if (name.includes("football")) return FootballIcon;
+  //   if (name.includes("yoga")) return YogaIcon;
+  //   if (name.includes("badminton")) return BadmintonIcon;
+  //   if (name.includes("skateboarding")) return SkateboardingIcon;
+  //   if (name.includes("pickleball")) return PickleballIcon;
+  //   if (name.includes("bodybuilding")) return BodybuildingIcon;
+  //   if (name.includes("swimming") || name.includes("swimmining"))
+  //     return SwimmingIcon;
+  //   if (name.includes("cricket")) return CricketIcon;
+  //   if (name.includes("tennis")) return TennisIcon;
+  //   if (name.includes("hockey")) return HockeyIcon;
+  //   // Default icon for unmatched sports
+  //   return () => <div className="text-xl">🏃</div>;
+  // };
+
+
+// Your getIconForSport function remains exactly the same - no changes needed!
+const getIconForSport = (sportName: string) => {
+  const name = sportName.toLowerCase();
+  if (name.includes("box cricket")) return GiCricketBat;
+  if (name.includes("physio")) return GiBodyBalance;
+  if (name.includes("roller skating")) return FaSkating;
+  if (name.includes("squash")) return GiTennisCourt;
+  if (name.includes("basketball")) return FaBasketballBall;
+  if (name.includes("cricket practice nets") || name.includes("cricket nets"))
+    return GiCricketBat;
+  if (name.includes("strength")) return FaDumbbell;
+  if (name.includes("football")) return IoFootballOutline;
+  if (name.includes("yoga")) return GiMeditation;
+  if (name.includes("badminton")) return MdSportsTennis;
+  if (name.includes("skateboarding")) return TbSkateboard;
+  if (name.includes("pickleball")) return GiTennisRacket;
+  if (name.includes("bodybuilding")) return GiMuscleUp;
+  if (name.includes("swimming") || name.includes("swimmining"))
+    return FaSwimmer;
+  if (name.includes("cricket")) return GiCricketBat;
+  if (name.includes("tennis")) return GiTennisRacket;
+  if (name.includes("hockey")) return HockeyIcon;
+  // Default icon for unmatched sports
+  return () => <div className="text-xl">🏃</div>;
+};
 
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("My Buddy");
@@ -128,7 +273,7 @@ useEffect(() => {
       const notifications = await Promise.all(
   pendingRequestIds.map(async (userId, index) => {
     try {
-      const userRes = await axios.get(`https://play-os-backendv2.forgehub.in/human/${userId}`);
+      const userRes = await axios.get(`${API_BASE_URL}/human/${userId}`);
       const requesterName = userRes.data.name || "Unknown";
       return {
         id: index + 1,
@@ -279,7 +424,7 @@ setPendingRequests((prev) =>
                   <div
                     key={sport.name}
                     onClick={() => setActiveChat(sport.chatId)}
-                    className={`flex-shrink-0 cursor-pointer rounded-md w-14 h-14 mx-2 flex items-center justify-center p-3 transition ${
+                    className={`flex-shrink-0 cursor-pointer rounded-md w-12 h-12 mx-2 flex items-center justify-center transition ${
                       activeChat === sport.chatId
                         ? "bg-[#00f0ff] shadow-md"
                         : "bg-gray-200"

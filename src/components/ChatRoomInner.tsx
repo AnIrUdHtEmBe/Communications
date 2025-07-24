@@ -78,7 +78,7 @@ export default function ChatRoomInner({
       try {
         // POST per API docs, sending chatId as a JSON string
         const response = await axios.post(
-          "https://play-os-backendv2.forgehub.in/human/human/get-photo",
+          `${API_BASE_URL}/human/human/get-photo`,
           `${chatId}` // note: stringify chatId because API expects `string` body
         );
         if (response.data) {
@@ -122,7 +122,7 @@ export default function ChatRoomInner({
   };
 
   const containerHeightClass =
-    activeTab === "My Tribe" ? "h-[70vh]" : "h-[80vh]";
+    activeTab === "My Tribe" ? "h-[65vh]" : "h-[80vh]";
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
@@ -263,7 +263,7 @@ export default function ChatRoomInner({
 
   return (
     <div
-      className={`mt-4 shadow-lg flex flex-col ${containerHeightClass} relative`}
+      className={` shadow-lg flex flex-col ${containerHeightClass} relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
