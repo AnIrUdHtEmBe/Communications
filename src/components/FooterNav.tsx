@@ -12,32 +12,33 @@ interface FooterItem {
   FooterLabel: string;
   path: string;
 }
+const basePath = "https://playbookingv2.forgehub.in";
 
 const FooterItems: FooterItem[] = [
   {
     FooterIcon: <HomeIcon className="icon" />,
     FooterLabel: "Home",
-    path: "/home",
+    path: `${basePath}/`,
   },
   {
     FooterIcon: <PeopleIcon className="icon" />,
     FooterLabel: "Play",
-    path: "/play",
+    path: `${basePath}/play`,
   },
   {
     FooterIcon: <PiCourtBasketball className="icon" />,
     FooterLabel: "Book",
-    path: "/book",
+    path: `${basePath}/book`,
   },
   {
     FooterIcon: <LuPartyPopper className="icon" />,
     FooterLabel: "Events",
-    path: "/events",
+    path: `${basePath}/events`,
   },
   {
     FooterIcon: <SchoolIcon className="icon" />,
     FooterLabel: "Learn",
-    path: "/learn",
+    path: `${basePath}/learn`,
   },
 ];
 
