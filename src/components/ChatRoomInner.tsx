@@ -1,4 +1,4 @@
-import { ChevronLeft, Mic, Plus, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, Mic, Plus, MoreHorizontal, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useMessages } from "@ably/chat/react";
 import { useContext } from "react";
@@ -293,6 +293,7 @@ export default function ChatRoomInner({
             )}
           </div>
         </div>
+        {activeTab === "My Game" && (
         <button
           onClick={() => {
             window.location.href =
@@ -304,6 +305,7 @@ export default function ChatRoomInner({
         >
           Game Details
         </button>
+        )}
       </div>
 
       {/* Date label */}
@@ -391,7 +393,7 @@ export default function ChatRoomInner({
 
       {/* Input */}
       <div className="flex items-center px-4 py-2 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
-        <Plus className="w-5 h-5 text-gray-500" />
+        
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -399,7 +401,9 @@ export default function ChatRoomInner({
           className="flex-1 border border-gray-300 rounded-full px-4 py-1 text-sm focus:outline-none"
           placeholder="Type a message"
         />
-        <Mic className="w-5 h-5 text-gray-500" />
+        <button onClick={() => sendMessage()}>
+        <Send className="w-5 h-5 text-gray-500" />
+        </button>
       </div>
     </div>
   );

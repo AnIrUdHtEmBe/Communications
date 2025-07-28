@@ -71,6 +71,10 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
   const [buddyAvatars, setBuddyAvatars] = useState<{ [key: string]: string }>(
     {}
   );
+  // State to manage past games for display
+  const [filteredPastGames, setFilteredPastGames] = useState<GameSummary[]>([]);
+
+  const [showMyGame, setShowMyGame] = useState<boolean>(true);
 
   // Fetch main user data, set buddies and gamesBooked IDs
   // In ChatList.tsx - Replace the fetchBuddiesFromAPI function
@@ -210,7 +214,9 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                 members: membersNames,
                 count,
                 time,
-                timeFormatted: gameDate ? new Date(data.startTime).toISOString() : "",
+                timeFormatted: gameDate
+                  ? new Date(data.startTime).toISOString()
+                  : "",
                 message: "",
                 gameChatId, // add chatId here
               });
@@ -274,8 +280,10 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
 
   // Helper function for opening chat
   const handleOpenChat = (id: string) => {
-    setActiveChatId(id);
+    onOpenChat(id);
+    
     setPastGames(false);
+    setShowMyGame(false);
   };
 
   // Reset UI when type changes
@@ -338,6 +346,27 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
     }
   }, [type]);
 
+  useEffect(() => {
+    // Don't run if not "games" view
+    if (type !== "game") return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // Past games = strictly before today and NO older than 7 days from today
+
+    const past7 = myGame.filter((g) => {
+      if (!g.timeFormatted) return false;
+      const gameDate = new Date(g.timeFormatted);
+      return (
+        gameDate < today &&
+        gameDate >= new Date(today.getTime() - SEVEN_DAYS_MS)
+      );
+    });
+
+    setFilteredPastGames(past7);
+    console.log("past 7 days games:", past7);
+  }, [myGame, type]);
+
   // In ChatList.tsx - Add this function before the return statement
   const fetchLatestMessageTime = async (
     roomName: string,
@@ -366,141 +395,164 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
 
   return (
     <>
-    <div className="pb-18">
-      {type === "buddy" && (
-        <>
-          <ChatCard
-            label="Pending Requests"
-            onClick={() => setShowPending(true)}
-            count={pendingRequestsCount > 0 ? pendingRequestsCount : 0}
-            time=""
-            icon={<MessageIcon />}
-            alwaysShowCount
-          />
-          {buddies.map((user) => (
-            // In ChatList.tsx - Replace buddy ChatCard with dynamic time
-            // In ChatList.tsx - Replace buddy ChatCard icon with avatar
+      <div className="pb-18">
+        {type === "buddy" && (
+          <>
             <ChatCard
-              key={user.name}
-              label={user.name}
-              count={user.count}
+              label="Pending Requests"
+              onClick={() => setShowPending(true)}
+              count={pendingRequestsCount > 0 ? pendingRequestsCount : 0}
               time=""
-              message={user.message}
-              onClick={() => {
-                onOpenChat(user.id);
-                setPastGames(false);
-              }}
-              icon={
-                <img
-                  src={
-                    buddyAvatars[user.id] ||
-                    "https://randomuser.me/api/portraits/men/78.jpg"
-                  }
-                  alt={user.name}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              }
+              icon={<MessageIcon />}
+              alwaysShowCount
             />
-          ))}
-        </>
-      )}
-
-      {showPending && <PendingRequests onClose={() => setShowPending(false)} />}
-
-      {type === "game" && (
-        <>
-          <ChatCard
-            label="Past Games"
-            onClick={() => setPastGames((prev) => !prev)}
-            count={2}
-            time="Yesterday"
-            icon={<MessageIcon />}
-          />
-          {myGame.length === 0 ? (
-            <div className="text-sm text-gray-500 p-4">No games found</div>
-          ) : (
-            myGame
-  .slice() // clone array
-  .sort((a, b) => new Date(b.timeFormatted).getTime() - new Date(a.timeFormatted).getTime())
-  .map((group) => (
-              // In ChatList.tsx - Replace game ChatCard with dynamic time
+            {buddies.map((user) => (
+              // In ChatList.tsx - Replace buddy ChatCard with dynamic time
+              // In ChatList.tsx - Replace buddy ChatCard icon with avatar
               <ChatCard
-                key={group.gameId}
-                label={group.sport}
-                count={0}
-                time={gameTimestamps[group.gameChatId]}
-                message={group.message}
+                key={user.name}
+                label={user.name}
+                count={user.count}
+                time=""
+                message={user.message}
                 onClick={() => {
-                  setChatName(group.sport.split(" - ")[0]);
+                  onOpenChat(user.id);
+                  setPastGames(false);
+                }}
+                icon={
+                  <img
+                    src={
+                      buddyAvatars[user.id] ||
+                      "https://randomuser.me/api/portraits/men/78.jpg"
+                    }
+                    alt={user.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                }
+              />
+            ))}
+          </>
+        )}
+
+        {showPending && (
+          <PendingRequests onClose={() => setShowPending(false)} />
+        )}
+
+        {type === "game" &&(
+          <>
+            <ChatCard
+              label="Past Games"
+              onClick={() => setPastGames((prev) => !prev)}
+              count=""
+              time=""
+              message="Messages will expire in 7days"
+              icon={<MessageIcon />}
+            />
+            {myGame.length === 0 ? (
+              <div className="text-sm text-gray-500 p-4">No games found</div>
+            ) : (
+              myGame
+                .slice() // clone array
+                .sort(
+                  (a, b) =>
+                    new Date(b.timeFormatted).getTime() -
+                    new Date(a.timeFormatted).getTime()
+                )
+                .filter((group) => {
+                  // Only show non-past games when not in "pastGames" mode
+                  if (!pastGames) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return (
+                      !group.timeFormatted ||
+                      new Date(group.timeFormatted) >= today
+                    );
+                  }
+                  return false;
+                })
+                .map((group) => (
+                  // In ChatList.tsx - Replace game ChatCard with dynamic time
+                  <ChatCard
+                    key={group.gameId}
+                    label={group.sport}
+                    count={0}
+                    time={gameTimestamps[group.gameChatId]}
+                    message={group.message}
+                    onClick={() => {
+                      setChatName(group.sport.split(" - ")[0]);
+                      setTimeout(() => {
+                        console.log("timeout");
+                        console.log("Clicked on game for session");
+
+                        sessionStorage.setItem("gameId", group.gameId);
+                        onOpenChat(group.gameChatId);
+                      }, 0);
+
+                      setPastGames(false);
+                    }}
+                    icon={
+                      <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                        {group.sport[0]}
+                      </div>
+                    }
+                    subtext={group.members}
+                  />
+                ))
+            )}
+          </>
+        )}
+
+        {pastGames && (
+          <PastGames
+            onOpenChat={handleOpenChat}
+            onClose={() => {
+              setActiveChatId(null);
+              setPastGames(false);
+            }}
+            pastGames={filteredPastGames}
+          />
+        )}
+
+        {type === "tribe" && (
+          <>
+            {/* <ChatCard label="My Tribes" count={2} time="Today" /> */}
+            {mySport.map((tribe) => (
+              // In ChatList.tsx - Replace tribe ChatCard with dynamic time
+              <ChatCard
+                key={tribe.name}
+                label={tribe.name}
+                count={0}
+                time={tribeTimestamps[tribe.sportChatId] || tribe.time}
+                message={tribe.message}
+                onClick={() => {
+                  setChatName(tribe.name);
                   setTimeout(() => {
                     console.log("timeout");
-                    console.log("Clicked on game for session");
-
-                    sessionStorage.setItem("gameId", group.gameId);
-                    onOpenChat(group.gameChatId);
+                    onOpenChat(tribe.sportChatId);
                   }, 0);
 
                   setPastGames(false);
                 }}
                 icon={
                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
-                    {group.sport[0]}
+                    {tribe.name[0]}
                   </div>
                 }
-                subtext={group.members}
+                subtext={tribe.members}
               />
-            ))
-          )}
-        </>
-      )}
+            ))}
+          </>
+        )}
 
-      {pastGames && (
-        <PastGames
-          onOpenChat={handleOpenChat}
-          onClose={() => setPastGames(false)}
-        />
-      )}
-
-      {type === "tribe" && (
-        <>
-          {/* <ChatCard label="My Tribes" count={2} time="Today" /> */}
-          {mySport.map((tribe) => (
-            // In ChatList.tsx - Replace tribe ChatCard with dynamic time
-            <ChatCard
-              key={tribe.name}
-              label={tribe.name}
-              count={0}
-              time={tribeTimestamps[tribe.sportChatId] || tribe.time}
-              message={tribe.message}
-              onClick={() => {
-                setChatName(tribe.name);
-                setTimeout(() => {
-                  console.log("timeout");
-                  onOpenChat(tribe.sportChatId);
-                }, 0);
-
-                setPastGames(false);
-              }}
-              icon={
-                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
-                  {tribe.name[0]}
-                </div>
-              }
-              subtext={tribe.members}
-            />
-          ))}
-        </>
-      )}
-
-      {activeChatId && (
-        <ChatRoom
-          chatId={activeChatId}
-          goBack={() => setActiveChatId(null)}
-          type={type}
-          roomName={`room-${type}-${activeChatId}`}
-          chatNames={chatName}
-        />
-      )}
+        {activeChatId && (
+          <ChatRoom
+            chatId={activeChatId}
+            goBack={() => setActiveChatId(null)}
+            type={type}
+            roomName={`room-${type}-${activeChatId}`}
+            chatNames={chatName}
+          />
+        )}
       </div>
     </>
   );

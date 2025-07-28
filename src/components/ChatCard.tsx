@@ -4,7 +4,7 @@ import DeclineButton from "./DeclineButton";
 
 interface ChatCardProps {
   label: string;
-  count: number;
+  count: number | any;
   time?: string;
   icon?: React.ReactNode;
   message?: string;

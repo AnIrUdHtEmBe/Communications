@@ -36,7 +36,6 @@ import { API_BASE_URL } from "./ApiBaseUrl";
 // import { IoFootballOutline } from 'react-icons/io5';
 // import { GiBodyBalance } from 'react-icons/gi'; // Game Icons
 
-
 // import {
 //   FaSwimmer,
 //   FaDumbbell,
@@ -89,27 +88,24 @@ import { API_BASE_URL } from "./ApiBaseUrl";
 // import { TennisIcon } from "../icons/TennisIcon";
 // import type { YogaIcon } from "../icons/YogaIcon";
 
-import { IoFootballOutline } from 'react-icons/io5';
-import { GiBodyBalance } from 'react-icons/gi'; // Game Icons
-
+import { IoFootballOutline } from "react-icons/io5";
+import { GiBodyBalance } from "react-icons/gi"; // Game Icons
 
 import {
   FaSwimmer,
   FaDumbbell,
   FaBasketballBall,
   FaSkating,
-} from 'react-icons/fa';
+} from "react-icons/fa";
 import {
   GiCricketBat,
   GiMuscleUp,
-  GiMeditation ,
+  GiMeditation,
   GiTennisRacket,
   GiTennisCourt,
-} from 'react-icons/gi';
-import {
-  MdSportsTennis,
-} from 'react-icons/md';
-import { TbSkateboard } from 'react-icons/tb';
+} from "react-icons/gi";
+import { MdSportsTennis } from "react-icons/md";
+import { TbSkateboard } from "react-icons/tb";
 import { HockeyIcon } from "../icons/HockeyIcon";
 export const PLAY_CONFIG = {
   startTime: "6:00",
@@ -124,32 +120,62 @@ const size = 100;
 export const DEFAULT_ICON_SIZE = size;
 
 export const games = [
-   { name: "Football 7 a side", icon:()=> <IoFootballOutline size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Box Cricket", icon: ()=> <GiCricketBat size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "yoga", icon:()=>  <GiMeditation size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "bodybuilding", icon:()=>  <GiMuscleUp size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "strength", icon:()=>  <FaDumbbell size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Swimmining", icon: ()=> <FaSwimmer size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Roller Skating", icon:()=>  <FaSkating size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Skateboarding", icon:()=>  <TbSkateboard size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Pickleball", icon:()=>  <GiTennisRacket size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Squash", icon: ()=> <GiTennisCourt size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Basketball", icon:()=>  <FaBasketballBall size={DEFAULT_ICON_SIZE-5} /> },
-  { name: "Badminton", icon:()=>  <MdSportsTennis size={DEFAULT_ICON_SIZE-5} /> },
+  {
+    name: "Football 7 a side",
+    icon: () => <IoFootballOutline size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Box Cricket",
+    icon: () => <GiCricketBat size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  { name: "yoga", icon: () => <GiMeditation size={DEFAULT_ICON_SIZE - 5} /> },
+  {
+    name: "bodybuilding",
+    icon: () => <GiMuscleUp size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  { name: "strength", icon: () => <FaDumbbell size={DEFAULT_ICON_SIZE - 5} /> },
+  {
+    name: "Swimmining",
+    icon: () => <FaSwimmer size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Roller Skating",
+    icon: () => <FaSkating size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Skateboarding",
+    icon: () => <TbSkateboard size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Pickleball",
+    icon: () => <GiTennisRacket size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Squash",
+    icon: () => <GiTennisCourt size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Basketball",
+    icon: () => <FaBasketballBall size={DEFAULT_ICON_SIZE - 5} />,
+  },
+  {
+    name: "Badminton",
+    icon: () => <MdSportsTennis size={DEFAULT_ICON_SIZE - 5} />,
+  },
   {
     name: "Cricket Practice Nets",
-    icon:()=>  (
+    icon: () => (
       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
         <GiCricketBat size={20} />
         <GiTennisCourt size={20} />
       </div>
     ),
   },
-  {	name:"Physio",icon:()=><GiBodyBalance size={DEFAULT_ICON_SIZE-5}  />  },
+  {
+    name: "Physio",
+    icon: () => <GiBodyBalance size={DEFAULT_ICON_SIZE - 5} />,
+  },
 ];
-
-
-
 
 type AllChatsProps = {
   activeRoom?: string; // optional as not used here
@@ -187,39 +213,39 @@ const AllChats = ({}: AllChatsProps) => {
   //   return () => <div className="text-xl">🏃</div>;
   // };
 
-
-// Your getIconForSport function remains exactly the same - no changes needed!
-const getIconForSport = (sportName: string) => {
-  const name = sportName.toLowerCase();
-  if (name.includes("box cricket")) return GiCricketBat;
-  if (name.includes("physio")) return GiBodyBalance;
-  if (name.includes("roller skating")) return FaSkating;
-  if (name.includes("squash")) return GiTennisCourt;
-  if (name.includes("basketball")) return FaBasketballBall;
-  if (name.includes("cricket practice nets") || name.includes("cricket nets"))
-    return GiCricketBat;
-  if (name.includes("strength")) return FaDumbbell;
-  if (name.includes("football")) return IoFootballOutline;
-  if (name.includes("yoga")) return GiMeditation;
-  if (name.includes("badminton")) return MdSportsTennis;
-  if (name.includes("skateboarding")) return TbSkateboard;
-  if (name.includes("pickleball")) return GiTennisRacket;
-  if (name.includes("bodybuilding")) return GiMuscleUp;
-  if (name.includes("swimming") || name.includes("swimmining"))
-    return FaSwimmer;
-  if (name.includes("cricket")) return GiCricketBat;
-  if (name.includes("tennis")) return GiTennisRacket;
-  if (name.includes("hockey")) return HockeyIcon;
-  // Default icon for unmatched sports
-  return () => <div className="text-xl">🏃</div>;
-};
+  // Your getIconForSport function remains exactly the same - no changes needed!
+  const getIconForSport = (sportName: string) => {
+    const name = sportName.toLowerCase();
+    if (name.includes("box cricket")) return GiCricketBat;
+    if (name.includes("physio")) return GiBodyBalance;
+    if (name.includes("roller skating")) return FaSkating;
+    if (name.includes("squash")) return GiTennisCourt;
+    if (name.includes("basketball")) return FaBasketballBall;
+    if (name.includes("cricket practice nets") || name.includes("cricket nets"))
+      return GiCricketBat;
+    if (name.includes("strength")) return FaDumbbell;
+    if (name.includes("football")) return IoFootballOutline;
+    if (name.includes("yoga")) return GiMeditation;
+    if (name.includes("badminton")) return MdSportsTennis;
+    if (name.includes("skateboarding")) return TbSkateboard;
+    if (name.includes("pickleball")) return GiTennisRacket;
+    if (name.includes("bodybuilding")) return GiMuscleUp;
+    if (name.includes("swimming") || name.includes("swimmining"))
+      return FaSwimmer;
+    if (name.includes("cricket")) return GiCricketBat;
+    if (name.includes("tennis")) return GiTennisRacket;
+    if (name.includes("hockey")) return HockeyIcon;
+    // Default icon for unmatched sports
+    return () => <div className="text-xl">🏃</div>;
+  };
 
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("My Buddy");
   const [showNotifications, setShowNotifications] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<
-  { id: number; text: string; actions: string[], userId: string }[]
->([]);
+    { id: number; text: string; actions: string[]; userId: string }[]
+  >([]);
+  const [paramChatType, setParamChatType] = useState(false);
 
   const isInChatRoom = activeChat !== null;
 
@@ -244,6 +270,17 @@ const getIconForSport = (sportName: string) => {
   const clientId = useContext(ClientIdContext);
 
   console.log(`hello from room-${chatType}-${activeChat}`);
+  const [chatIdFromParams, setChatIdFromParams] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paramChatId = params.get("chatId");
+    if (paramChatId) {
+      setChatIdFromParams(true);
+      setActiveChat(paramChatId);
+      setActiveTab("My Game"); // set activeTab because ChatRoom expects it
+    }
+  }, []);
 
   function getRoomName(chatType: string, user1: string, user2: string) {
     if (chatType !== "buddy" && chatType !== "game" && chatType !== "tribe") {
@@ -263,55 +300,59 @@ const getIconForSport = (sportName: string) => {
     return `room-${chatType}-${sorted[0]}-${sorted[1]}`;
   }
 
-useEffect(() => {
-  async function fetchPendingNotifications() {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/human/${clientId}`);
-      const pendingRequestIds: string[] = res.data.pendingRequest || [];
-      if (pendingRequestIds.length === 0) {
-        // No pending requests - set notification accordingly
-        setPendingRequests([
-          {
-            id: 0,
-            userId: "", // or null
-            text: "You have no pending requests",
-            actions: [], // no actions
-          },
-        ]);
-        return; // No need to proceed further
+  useEffect(() => {
+    async function fetchPendingNotifications() {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/human/${clientId}`);
+        const pendingRequestIds: string[] = res.data.pendingRequest || [];
+        if (pendingRequestIds.length === 0) {
+          sessionStorage.setItem("hasNotif", "false")
+          // No pending requests - set notification accordingly
+          setPendingRequests([
+            {
+              id: 0,
+              userId: "", // or null
+              text: "You have no pending requests",
+              actions: [], // no actions
+            },
+          ]);
+          return; // No need to proceed further
+        }
+        if (pendingRequestIds.length > 0) {
+          sessionStorage.setItem("hasNotif", "true");
+        }
+        // Fetch all requester names in parallel
+        const notifications = await Promise.all(
+          pendingRequestIds.map(async (userId, index) => {
+            try {
+              const userRes = await axios.get(
+                `${API_BASE_URL}/human/${userId}`
+              );
+              const requesterName = userRes.data.name || "Unknown";
+              return {
+                id: index + 1,
+                userId: userId,
+                text: `You have a pending friend request from ${requesterName}`,
+                actions: ["Accept", "Decline"],
+              };
+            } catch {
+              return {
+                id: index + 1,
+                userId: userId,
+                text: `You have a pending friend request from Unknown`,
+                actions: ["Accept", "Decline"],
+              };
+            }
+          })
+        );
+
+        setPendingRequests(notifications);
+      } catch (error) {
+        setPendingRequests([]);
       }
-      // Fetch all requester names in parallel
-      const notifications = await Promise.all(
-  pendingRequestIds.map(async (userId, index) => {
-    try {
-      const userRes = await axios.get(`${API_BASE_URL}/human/${userId}`);
-      const requesterName = userRes.data.name || "Unknown";
-      return {
-        id: index + 1,
-        userId: userId,
-        text: `You have a pending friend request from ${requesterName}`,
-        actions: ["Accept", "Decline"],
-      };
-    } catch {
-      return {
-        id: index + 1,
-        userId: userId,
-        text: `You have a pending friend request from Unknown`,
-        actions: ["Accept", "Decline"],
-      };
     }
-  })
-);
-
-      
-      setPendingRequests(notifications);
-    } catch (error) {
-      setPendingRequests([]);
-    }
-  }
-  fetchPendingNotifications();
-}, [clientId]);
-
+    fetchPendingNotifications();
+  }, [clientId]);
 
   // Add this useEffect to fetch sports when type is tribe
   useEffect(() => {
@@ -331,46 +372,49 @@ useEffect(() => {
     }
   }, [chatType]);
 
-
   const acceptNotification = async (userIdToAdd: string) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
-      userId: clientId,
-      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
-      addHereTargetList: "faveUsers",
-    });
-    console.log("Accepted user response:", response.data);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/human/user/connections/add`,
+        {
+          userId: clientId,
+          addTheseUserIds: [userIdToAdd], // Pass in the accepted user's ID here
+          addHereTargetList: "faveUsers",
+        }
+      );
+      console.log("Accepted user response:", response.data);
 
-    // Optionally, update local notifications state to remove accepted user
-   setPendingRequests((prev) =>
-  prev.filter((notif) => notif.userId !== userIdToAdd)
-);
+      // Optionally, update local notifications state to remove accepted user
+      setPendingRequests((prev) =>
+        prev.filter((notif) => notif.userId !== userIdToAdd)
+      );
+    } catch (error) {
+      console.error("Error accepting user:", error);
+    }
+  };
 
+  const deleteNotification = async (userIdToAdd: string) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/human/user/connections/add`,
+        {
+          userId: clientId,
+          addTheseUserIds: [userIdToAdd], // Pass in the accepted user's ID here
+          addHereTargetList: "decline",
+        }
+      );
+      console.log("Accepted user response:", response.data);
 
-  } catch (error) {
-    console.error("Error accepting user:", error);
-  }
-};
+      // Optionally, update local notifications state to remove accepted user
+      setPendingRequests((prev) =>
+        prev.filter((notif) => notif.userId !== userIdToAdd)
+      );
+    } catch (error) {
+      console.error("Error accepting user:", error);
+    }
+  };
 
-const deleteNotification = async (userIdToAdd: string) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
-      userId: clientId,
-      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
-      addHereTargetList: "decline",
-    });
-    console.log("Accepted user response:", response.data);
-
-    // Optionally, update local notifications state to remove accepted user
-setPendingRequests((prev) =>
-  prev.filter((notif) => notif.userId !== userIdToAdd)
-);
-
-
-  } catch (error) {
-    console.error("Error accepting user:", error);
-  }
-};
+  // On mount, parse chatId param
 
   return (
     <>
@@ -380,6 +424,7 @@ setPendingRequests((prev) =>
         setActiveTab={(tab) => {
           setActiveTab(tab);
           setActiveChat(null);
+          setChatIdFromParams(false);
           setShowNotifications(false); // Hide notifications when switching tabs
         }}
         showBackButton={true}
@@ -392,102 +437,121 @@ setPendingRequests((prev) =>
 
       {/* Notification Modal */}
       {showNotifications && (
-  <div className="fixed mt-48 left-4 right z-50 shadow-lg p-4">
-    <div className="flex justify-between items-center mb-2">
-      <h2 className="text-lg font-semibold">Notifications</h2>
-      <button
-        onClick={() => setShowNotifications(false)}
-        className="text-sm text-gray-500"
-      >
-        Close
-      </button>
-    </div>
+        <div className="fixed mt-48 left-4 right z-50 shadow-lg p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-lg font-semibold">Notifications</h2>
+            <button
+              onClick={() => setShowNotifications(false)}
+              className="text-sm text-gray-500"
+            >
+              Close
+            </button>
+          </div>
 
-    {pendingRequests.length === 0 ? (
-      <ChatCard
-        label="No notifications"
-        count={0}
-        time=""
-        actions={[]}  // no actions 
-      />
-    ) : (
-      pendingRequests.map((n) => (
-        <ChatCard
-          key={n.id}
-          label={n.text}
-          count={1}
-          time=""
-          actions={n.actions} // assume array like ["accept", "decline"]
-          onAccept={() => acceptNotification(n.userId)}
-          onDecline={() => deleteNotification(n.userId)}
-        />
-      ))
-    )}
-  </div>
-)}
-
+          {pendingRequests.length === 0 ? (
+            <ChatCard
+              label="No notifications"
+              count={0}
+              time=""
+              actions={[]} // no actions
+            />
+          ) : (
+            pendingRequests.map((n) => (
+              <ChatCard
+                key={n.id}
+                label={n.text}
+                count={n.id}
+                time=""
+                actions={n.actions} // assume array like ["accept", "decline"]
+                onAccept={() => acceptNotification(n.userId)}
+                onDecline={() => deleteNotification(n.userId)}
+              />
+            ))
+          )}
+        </div>
+      )}
 
       {!showNotifications && (
         <>
-          {/* Tribe Icons */}
-          {chatType === "tribe" && (
-            <div
-              className="mx-4 mt-48 flex overflow-x-auto overflow-y-hidden"
-              style={{
-                height: "80px",
-                scrollbarWidth: "auto",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {mySport.map((sport) => {
-                const IconComponent = getIconForSport(sport.name);
-                return (
-                  <div
-                    key={sport.name}
-                    onClick={() => setActiveChat(sport.chatId)}
-                    className={`flex-shrink-0 cursor-pointer rounded-md w-12 h-12 mx-2 flex items-center justify-center transition ${
-                      activeChat === sport.chatId
-                        ? "bg-[#00f0ff] shadow-md"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    <IconComponent />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div
-            className={`${
-              activeTab === "My Tribe"
-                ? "mt-4"
-                : activeTab === "My Game" || activeTab === "My Buddy"
-                ? "mt-48"
-                : ""
-            } bg-white shadow-lg`}
-          >
-            {isInChatRoom ? (
+          {chatIdFromParams ? (
+            <div className="mt-44">
               <ChatRoom
-              key={getRoomName(chatType, clientId, activeChat!)}
-                type={chatType}
+                key={activeChat}
+                type="game"
                 chatId={activeChat!}
-                goBack={() => setActiveChat(null)}
-                activeTab={activeTab}
-                roomName={getRoomName(chatType, clientId, activeChat!)}
+                goBack={() => {
+                  setActiveChat(null);
+                  setChatIdFromParams(false);
+                  setActiveTab("My Game"); // default tab after exiting chat room
+                }}
+                activeTab="My Game"
+                roomName={`room-game-${activeChat}`}
                 chatNames={""}
               />
-            ) : (
-              <ChatList
-                type={chatType}
-                onOpenChat={(gameName) => {
-                  setActiveChat(gameName);
-                  console.log("opening chat with id", gameName);
-                }}
-                activeChat={activeChat}
-              />
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              {/* Tribe Icons */}
+              {chatType === "tribe" && (
+                <div
+                  className="mx-4 mt-48 flex overflow-x-auto overflow-y-hidden"
+                  style={{
+                    height: "80px",
+                    scrollbarWidth: "auto",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  {mySport.map((sport) => {
+                    const IconComponent = getIconForSport(sport.name);
+                    return (
+                      <div
+                        key={sport.name}
+                        onClick={() => setActiveChat(sport.chatId)}
+                        className={`flex-shrink-0 cursor-pointer rounded-md w-12 h-12 mx-2 flex items-center justify-center transition ${
+                          activeChat === sport.chatId
+                            ? "bg-[#00f0ff] shadow-md"
+                            : "bg-gray-200"
+                        }`}
+                      >
+                        <IconComponent />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div
+                className={`${
+                  activeTab === "My Tribe"
+                    ? "mt-4"
+                    : activeTab === "My Game" || activeTab === "My Buddy"
+                    ? "mt-48"
+                    : ""
+                } bg-white shadow-lg`}
+              >
+                {isInChatRoom ? (
+                  <ChatRoom
+                    key={getRoomName(chatType, clientId, activeChat!)}
+                    type={chatType}
+                    chatId={activeChat!}
+                    goBack={() => setActiveChat(null)}
+                    activeTab={activeTab}
+                    roomName={getRoomName(chatType, clientId, activeChat!)}
+                    chatNames={""}
+                  />
+                ) : (
+                  <ChatList
+                    type={chatType}
+                    onOpenChat={(gameName) => {
+                      setActiveChat(gameName);
+                      console.log("opening chat with id", gameName);
+                    }}
+                    activeChat={activeChat}
+                  />
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </>

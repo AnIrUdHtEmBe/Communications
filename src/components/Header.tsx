@@ -61,7 +61,7 @@ export default function Header({
   
 
   <NotificationBell
-    hasNotification={true}
+    hasNotification={false}
     onClick={showNotifications}
     className={`transition-all duration-200 pb-2 border-b-4 left-4 top-1 ${
       isNotificationsOpen ? "border-black" : "border-transparent"

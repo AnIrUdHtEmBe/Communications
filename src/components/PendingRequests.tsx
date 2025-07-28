@@ -5,93 +5,91 @@ import { ClientIdContext } from "../main";
 import { API_BASE_URL } from "./ApiBaseUrl";
 
 interface Notification {
-  id: number;          // keep index or unique key for React rendering
-  userId: string;      // actual user id string
+  id: number; // keep index or unique key for React rendering
+  userId: string; // actual user id string
   text: string;
   actions: string[];
 }
-
 
 interface PendingProps {
   onClose: () => void;
 }
 
-
-
 const PendingRequests = ({ onClose }: PendingProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-    const clientId = useContext(ClientIdContext);
+  const clientId = useContext(ClientIdContext);
 
-const fetchNotifications = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/human/${clientId}`);
-    console.log("pending api req", response.data);
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/human/${clientId}`);
+      console.log("pending api req", response.data);
 
-    const pendingRequests: string[] = response.data.pendingRequest || [];
-    console.log("pending req", pendingRequests);
+      const pendingRequests: string[] = response.data.pendingRequest || [];
+      console.log("pending req", pendingRequests);
 
-    // Map to an array of Promises and await them all before setting state
-    const updatedNotifications = await Promise.all(
-  pendingRequests.map(async (req: string, index: number) => {
-    const humanNameRes = await axios.get(`${API_BASE_URL}/human/${req}`);
-    const name = humanNameRes.data.name;
+      // Map to an array of Promises and await them all before setting state
+      const updatedNotifications = await Promise.all(
+        pendingRequests.map(async (req: string, index: number) => {
+          const humanNameRes = await axios.get(`${API_BASE_URL}/human/${req}`);
+          const name = humanNameRes.data.name;
 
-    return {
-      id: index,       // unique React key
-      userId: req,     // real user ID string to use in accept API
-      text: `${name} has sent a friend request`,
-      actions: ["Accept", "Decline"],
-    };
-  })
-);
+          return {
+            id: index, // unique React key
+            userId: req, // real user ID string to use in accept API
+            text: `${name} has sent a friend request`,
+            actions: ["Accept", "Decline"],
+          };
+        })
+      );
 
+      setNotifications(updatedNotifications);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
 
-    setNotifications(updatedNotifications);
-  } catch (error) {
-    console.error("Failed to fetch notifications:", error);
-  }
-};
+  const acceptNotification = async (userIdToAdd: string) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/human/user/connections/add`,
+        {
+          userId: clientId,
+          addTheseUserIds: [userIdToAdd], // Pass in the accepted user's ID here
+          addHereTargetList: "faveUsers",
+        }
+      );
+      console.log("Accepted user response:", response.data);
 
-const acceptNotification = async (userIdToAdd: string) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
-      userId: clientId,
-      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
-      addHereTargetList: "faveUsers",
-    });
-    console.log("Accepted user response:", response.data);
+      // Optionally, update local notifications state to remove accepted user
+      setNotifications((prev) =>
+        prev.filter((notif) => notif.userId !== userIdToAdd)
+      );
+    } catch (error) {
+      console.error("Error accepting user:", error);
+    }
+  };
 
-    // Optionally, update local notifications state to remove accepted user
-    setNotifications((prev) =>
-  prev.filter((notif) => notif.userId !== userIdToAdd)
-);
+  const deleteNotification = async (userIdToAdd: string) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/human/user/connections/add`,
+        {
+          userId: clientId,
+          addTheseUserIds: [userIdToAdd], // Pass in the accepted user's ID here
+          addHereTargetList: "decline",
+        }
+      );
+      console.log("Accepted user response:", response.data);
 
-  } catch (error) {
-    console.error("Error accepting user:", error);
-  }
-};
-
-const deleteNotification = async (userIdToAdd: string) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/human/user/connections/add`, {
-      userId: clientId,
-      addTheseUserIds: [userIdToAdd],  // Pass in the accepted user's ID here
-      addHereTargetList: "decline",
-    });
-    console.log("Accepted user response:", response.data);
-
-    // Optionally, update local notifications state to remove accepted user
-    setNotifications((prev) =>
-  prev.filter((notif) => notif.userId !== userIdToAdd)
-);
-
-  } catch (error) {
-    console.error("Error accepting user:", error);
-  }
-};
-
-
+      // Optionally, update local notifications state to remove accepted user
+      setNotifications((prev) =>
+        prev.filter((notif) => notif.userId !== userIdToAdd)
+      );
+    } catch (error) {
+      console.error("Error accepting user:", error);
+    }
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -103,7 +101,7 @@ const deleteNotification = async (userIdToAdd: string) => {
       onClick={onClose} // clicking outside closes modal
     >
       <div
-        className="relative bg-white bg-opacity-20 text-white rounded-lg shadow-lg w-[400px] max-w-full pb-6"
+        className="relative bg-white bg-opacity-20 text-white rounded-lg shadow-lg w-[350px] max-w-full pb-6"
         onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside modal
       >
         {/* Header bar with fixed height */}
@@ -124,19 +122,23 @@ const deleteNotification = async (userIdToAdd: string) => {
 
         {/* Content below header */}
         {notifications.map((n) => (
-  <ChatCard
-    key={n.id}
-    label={n.text}
-    count={1}
-    time="2:00 PM"
-    onClick={() => console.log("ChatCard clicked", n.userId)}
-    actions={n.actions}
-    onAccept={() => acceptNotification(n.userId)}
-    onDecline={() => deleteNotification(n.userId)}
-  />
-))}
+          <ChatCard
+            key={n.id}
+            label={n.text}
+            count={1}
+            time=""
+            onClick={() => console.log("ChatCard clicked", n.userId)}
+            actions={n.actions}
+            onAccept={() => acceptNotification(n.userId)}
+            onDecline={() => deleteNotification(n.userId)}
+          />
+        ))}
 
-       
+        {notifications.length === 0 && (
+          <div className="text-black font-semibold flex justify-center mt-3">
+            You have no pending requests
+            </div>
+          )}
       </div>
     </div>
   );
