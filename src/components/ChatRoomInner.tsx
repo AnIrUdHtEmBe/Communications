@@ -122,7 +122,7 @@ export default function ChatRoomInner({
   };
 
   const containerHeightClass =
-    activeTab === "My Tribe" ? "h-[65vh]" : "h-[80vh]";
+    activeTab === "My Tribe" ? "h-[65vh]" : "h-[60vh]";
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
@@ -263,7 +263,7 @@ export default function ChatRoomInner({
 
   return (
     <div
-      className={` shadow-lg flex pb-18 flex-col ${containerHeightClass} relative`}
+      className={`shadow-lg flex pb-16 flex-col ${containerHeightClass} relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
