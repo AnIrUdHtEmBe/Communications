@@ -263,7 +263,7 @@ export default function ChatRoomInner({
 
   return (
     <div
-      className={`shadow-lg flex pb-16 flex-col ${containerHeightClass} relative`}
+      className={`shadow-lg flex pb-2 flex-col ${containerHeightClass} relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
