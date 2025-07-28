@@ -122,7 +122,7 @@ export default function ChatRoomInner({
   };
 
   const containerHeightClass =
-    activeTab === "My Tribe" ? "h-[65vh]" : "h-[65vh]";
+    activeTab === "My Tribe" ? "h-[65vh]" : "h-[75vh]";
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
