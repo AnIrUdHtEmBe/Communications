@@ -200,66 +200,74 @@ export default function ChatRoomInner({
   }, [messages, type]);
 
   useEffect(() => {
-    const fetchDisplayName = async () => {
-      try {
-        if (type === "buddy") {
-          setDisplayName(chatName || "Buddy Chat");
-        } else if (type === "game") {
-          // Find game by matching chatId in the user's chat mappings
-          const chatRes = await axios.get(
-            `${API_BASE_URL}/human/getChatId/${clientId}`
-          );
-          const mapping = chatRes.data.find(
-            (item: any) => item.chatId === chatId
-          );
-
-          if (mapping) {
-            const gameResponse = await axios.get(
-              `${API_BASE_URL}/game/${mapping.gameId}`
-            );
-            const sport = gameResponse.data.sport || "Unknown Sport";
-
-            // Format sport name with date (same as ChatList)
-            const gameDate = gameResponse.data.startTime
-              ? new Date(gameResponse.data.startTime).toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "short",
-                    day: "numeric",
-                  }
-                )
-              : "";
-            const formattedSportName = gameDate
-              ? `${sport} - ${gameDate}`
-              : sport;
-
-            setDisplayName(formattedSportName);
-          } else {
-            setDisplayName("Game Chat");
-          }
-        } else if (type === "tribe") {
-          // Get all sports and find the one with matching chatId
-          const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
-          const sport = sportsResponse.data.find(
-            (s: any) => s.chatId === chatId
-          );
-          const sportName = sport?.name || "Tribe Chat";
-          setDisplayName(sportName);
-        }
-      } catch (error) {
-        console.error("Failed to fetch display name:", error);
-        setDisplayName(
-          type === "buddy"
-            ? "Buddy Chat"
-            : type === "game"
-            ? "Game Chat"
-            : "Tribe Chat"
+  const fetchDisplayName = async () => {
+    try {
+      if (type === "buddy") {
+        setDisplayName(chatName || "Buddy Chat");
+      } else if (type === "game") {
+        // Find game by matching chatId in the user's chat mappings
+        const chatRes = await axios.get(
+          `${API_BASE_URL}/human/getChatId/${clientId}`
         );
-      }
-    };
+        
+        // Extract newGames and pastGames from API response
+        const responseData = chatRes.data;
+        const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
+        const pastGames = Array.isArray(responseData?.pastGames) ? responseData.pastGames : [];
+        
+        // Combine both arrays to search for the chatId
+        const allGames = [...newGames, ...pastGames];
+        const mapping = allGames.find(
+          (item: any) => item.chatId === chatId
+        );
 
-    fetchDisplayName();
-  }, [chatId, type, chatName, clientId]);
+        if (mapping) {
+          const gameResponse = await axios.get(
+            `${API_BASE_URL}/game/${mapping.gameId}`
+          );
+          const sport = gameResponse.data.sport || "Unknown Sport";
+
+          // Format sport name with date (same as ChatList)
+          const gameDate = gameResponse.data.startTime
+            ? new Date(gameResponse.data.startTime).toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                }
+              )
+            : "";
+          const formattedSportName = gameDate
+            ? `${sport} - ${gameDate}`
+            : sport;
+
+          setDisplayName(formattedSportName);
+        } else {
+          setDisplayName("Game Chat");
+        }
+      } else if (type === "tribe") {
+        // Get all sports and find the one with matching chatId
+        const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
+        const sport = sportsResponse.data.find(
+          (s: any) => s.chatId === chatId
+        );
+        const sportName = sport?.name || "Tribe Chat";
+        setDisplayName(sportName);
+      }
+    } catch (error) {
+      console.error("Failed to fetch display name:", error);
+      setDisplayName(
+        type === "buddy"
+          ? "Buddy Chat"
+          : type === "game"
+          ? "Game Chat"
+          : "Tribe Chat"
+      );
+    }
+  };
+
+  fetchDisplayName();
+}, [chatId, type, chatName, clientId]);
 
   return (
     <div
@@ -297,7 +305,7 @@ export default function ChatRoomInner({
         <button
           onClick={() => {
             window.location.href =
-              `https://playbookingv2.forgehub.in/event-participants-details?gameId=${sessionStorage.getItem("gameId")}`;
+              `https://playbookingv2.forgehub.in/event-participants-details?gameId=${sessionStorage.getItem("newGameIdDirect")}`;
           }}
           type="button" // good practice to prevent unintended form submits
           className="bg-blue-500 text-white text-xs font-semibold px-1 py-1 rounded shadow transition"

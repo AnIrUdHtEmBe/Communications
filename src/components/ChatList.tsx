@@ -75,6 +75,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
   const [filteredPastGames, setFilteredPastGames] = useState<GameSummary[]>([]);
 
   const [showMyGame, setShowMyGame] = useState<boolean>(true);
+  const [apiPastGames, setApiPastGames] = useState<any[]>([]);
 
   // Fetch main user data, set buddies and gamesBooked IDs
   // In ChatList.tsx - Replace the fetchBuddiesFromAPI function
@@ -91,14 +92,15 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
       );
       console.log("game new api raw", gameResponse);
 
-      const gamesBooked = Array.isArray(gameResponse.data)
-        ? gameResponse.data.map((item: any) => item.gameId)
-        : [];
+      const responseData = gameResponse.data;
+const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
+const pastGamesFromApi = Array.isArray(responseData?.pastGames) ? responseData.pastGames : [];
 
-      console.log(gamesBooked, "Games booked new api");
+const gamesBooked = newGames.map((item: any) => item.gameId);
+console.log(gamesBooked, "Games booked new api");
+setGames(gamesBooked);
 
-      setGames(gamesBooked);
-
+setApiPastGames(pastGamesFromApi);
       // Fetch fave users details
       const faveUserIds = mainUserResponse.data.faveUsers || [];
       const faveUsersResponses = await Promise.all(
@@ -165,17 +167,25 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
         const chatRes = await axios.get(
           `${API_BASE_URL}/human/getChatId/${clientId}`
         );
+        const responseData = chatRes.data;
+const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
         const chatMappings: {
           courtId: string;
           startTime: string;
           endTime: string;
           gameId: string;
           chatId: string;
-        }[] = chatRes.data;
+        }[] = newGames;
+
+
+
+const validGameIds = games.filter(gameId => 
+  chatMappings.some(mapping => mapping.gameId === gameId)
+);
 
         // 2. Now fetch game details in parallel
         await Promise.all(
-          games.map(async (gameId) => {
+          validGameIds.map(async (gameId) => {
             try {
               const res = await axios.get(`${API_BASE_URL}/game/${gameId}`);
               const data = res.data;
@@ -281,6 +291,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
   // Helper function for opening chat
   const handleOpenChat = (id: string) => {
     onOpenChat(id);
+    console.log("pastGames gameId", id);
     
     setPastGames(false);
     setShowMyGame(false);
@@ -346,26 +357,92 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
     }
   }, [type]);
 
-  useEffect(() => {
-    // Don't run if not "games" view
-    if (type !== "game") return;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // Past games = strictly before today and NO older than 7 days from today
+useEffect(() => {
+  if (type !== "game") return;
 
-    const past7 = myGame.filter((g) => {
-      if (!g.timeFormatted) return false;
-      const gameDate = new Date(g.timeFormatted);
-      return (
-        gameDate < today &&
-        gameDate >= new Date(today.getTime() - SEVEN_DAYS_MS)
-      );
-    });
+  // Process past games from API
+  async function processPastGames() {
+    if (apiPastGames.length === 0) {
+      setFilteredPastGames([]);
+      return;
+    }
 
-    setFilteredPastGames(past7);
-    console.log("past 7 days games:", past7);
-  }, [myGame, type]);
+    const processedPastGames: GameSummary[] = [];
+
+    await Promise.all(
+      apiPastGames.map(async (pastGame) => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/game/${pastGame.gameId}`);
+          const data = res.data;
+
+          const sport = data.sport || "Unknown Sport";
+
+          // Format sport name with date
+          const gameDate = data.startTime
+            ? new Date(data.startTime).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "";
+          const formattedSportName = gameDate
+            ? `${sport} - ${gameDate}`
+            : sport;
+
+          const players = data.scheduledPlayersDetails || [];
+          const membersNames = players.map((p: any) => p.name).join(", ");
+          const count = players.length || 0;
+          const time = data.startTime
+            ? new Date(data.startTime).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "N/A";
+
+          processedPastGames.push({
+            gameId: pastGame.gameId,
+            sport: formattedSportName,
+            members: membersNames,
+            count,
+            time,
+            timeFormatted: data.startTime ? new Date(data.startTime).toISOString() : "",
+            message: "",
+            gameChatId: pastGame.chatId,
+          });
+        } catch (err) {
+          console.error(`Failed to fetch details for past game ${pastGame.gameId}`, err);
+        }
+      })
+    );
+
+    setFilteredPastGames(processedPastGames);
+    console.log("processed past games:", processedPastGames);
+  }
+
+  processPastGames();
+}, [apiPastGames, type]);
+
+
+  // useEffect(() => {
+  //   // Don't run if not "games" view
+  //   if (type !== "game") return;
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+
+  //   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // Past games = strictly before today and NO older than 7 days from today
+
+  //   const past7 = myGame.filter((g) => {
+  //     if (!g.timeFormatted) return false;
+  //     const gameDate = new Date(g.timeFormatted);
+  //     return (
+  //       gameDate < today &&
+  //       gameDate >= new Date(today.getTime() - SEVEN_DAYS_MS)
+  //     );
+  //   });
+
+  //   setFilteredPastGames(past7);
+  //   console.log("past 7 days games:", past7);
+  // }, [myGame, type]);
 
   // In ChatList.tsx - Add this function before the return statement
   const fetchLatestMessageTime = async (
@@ -482,7 +559,7 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
                       setChatName(group.sport.split(" - ")[0]);
                       setTimeout(() => {
                         console.log("timeout");
-                        console.log("Clicked on game for session");
+                        console.log("Clicked on game for session", group.gameId);
 
                         sessionStorage.setItem("gameId", group.gameId);
                         onOpenChat(group.gameChatId);

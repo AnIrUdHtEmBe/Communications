@@ -19,6 +19,7 @@ const PastGames = ({ onOpenChat, pastGames }: PastGamesProps) => {
           time={group.time}
           message={group.message}
           onClick={() => {onOpenChat(group.gameChatId) 
+            sessionStorage.setItem("newGameIdDirect", group.gameId)
             console.log(group.gameChatId, "Chatid for past games")}
           }
           icon={
