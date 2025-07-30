@@ -189,7 +189,7 @@ const validGameIds = games.filter(gameId =>
             try {
               const res = await axios.get(`${API_BASE_URL}/game/${gameId}`);
               const data = res.data;
-              console.log("Game fetch api", data);
+              console.log("Game fetch api in useEffect", data);
 
               // Find matching chatId from chatMappings for this gameId
               const mapping = chatMappings.find((m) => m.gameId === gameId);
@@ -535,15 +535,21 @@ useEffect(() => {
                     new Date(b.timeFormatted).getTime() -
                     new Date(a.timeFormatted).getTime()
                 )
+                // .filter((group) => {
+                //   // Only show non-past games when not in "pastGames" mode
+                //   if (!pastGames) {
+                //     const today = new Date();
+                //     today.setHours(0, 0, 0, 0);
+                //     return (
+                //       !group.timeFormatted ||
+                //       new Date(group.timeFormatted) >= today
+                //     );
+                //   }
+                //   return false;
+                // })
                 .filter((group) => {
-                  // Only show non-past games when not in "pastGames" mode
-                  if (!pastGames) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return (
-                      !group.timeFormatted ||
-                      new Date(group.timeFormatted) >= today
-                    );
+                  if(!pastGames){
+                    return true;
                   }
                   return false;
                 })
@@ -562,6 +568,7 @@ useEffect(() => {
                         console.log("Clicked on game for session", group.gameId);
 
                         sessionStorage.setItem("gameId", group.gameId);
+                        sessionStorage.setItem("newGameIdDirect", group.gameId)
                         onOpenChat(group.gameChatId);
                       }, 0);
 
