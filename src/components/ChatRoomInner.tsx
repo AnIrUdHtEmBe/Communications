@@ -9,7 +9,15 @@ import axios from "axios";
 import { API_BASE_URL } from "./ApiBaseUrl";
 
 export interface ChatRoomProps {
-  type?: "buddy" | "game" | "tribe";
+  type?:
+    | "buddy"
+    | "game"
+    | "tribe"
+    | "fitness"
+    | "wellness"
+    | "sports"
+    | "nutrition"
+    | "events";
   chatId: string;
   chatNames: string | null;
   goBack: () => void;
@@ -42,6 +50,7 @@ export default function ChatRoomInner({
   chatNames,
   goBack,
   activeTab,
+  roomName,
 }: ChatRoomProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -49,22 +58,14 @@ export default function ChatRoomInner({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const clientId = useContext(ClientIdContext);
   const clientsIds = clientId;
-
-  // ✅ Real-time message listener
-  // const { send } = useMessages({
-  //   // @ts-ignore
-  //   listener: (event: MessageEvent) => {
-  //     // @ts-ignore
-  //     const message = event.message;
-  //     if (event.type === ChatMessageEventType.Created) {
-  //       setMessages((prev) => [...prev, message]);
-  //     }
-  //   },
-  // });
-  // In ChatRoomInner.tsx - Add this state after existing useState
   const [senderNames, setSenderNames] = useState<{ [key: string]: string }>({});
   const [displayName, setDisplayName] = useState<string>("");
   const [showMessage, setShowMessage] = useState(false);
+  const [contextInfo, setContextInfo] = useState<string | null>(null);
+  const [contextOwnerId, setContextOwnerId] = useState<string | null>(null);
+  const [contextData, setContextData] = useState<any>(null);
+  const [hasInitiallyMounted, setHasInitiallyMounted] = useState(false);
+  const initialContextRoomRef = useRef<string | null>(null);
 
   const [chatName, setChatName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(
@@ -95,6 +96,37 @@ export default function ChatRoomInner({
     fetchAvatar();
   }, [chatId]);
 
+  // Add this useEffect after your existing useState declarations
+  // Reset messages when roomName changes
+useEffect(() => {
+  console.log("Room changed to:", roomName);
+  if (roomName) {
+    // Check if this is NOT the initial room with context
+    const shouldClearContext = initialContextRoomRef.current !== null && 
+                               roomName !== initialContextRoomRef.current;
+    
+    // Force complete reset of chat state
+    setMessages([]);
+    setLoading(true);
+    setSenderNames({});
+    setDisplayName("");
+    setChatName(null);
+    
+    // Only clear context if switching to a different room
+    if (shouldClearContext) {
+      setContextInfo(null);
+      setContextData(null);
+      setContextOwnerId(null);
+    }
+
+    // Force re-fetch of chat data
+    if (chatId) {
+      fetchChatName(chatId);
+    }
+  }
+}, [roomName, chatId]);
+
+
   const fetchChatName = async (chatId: string) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/human/${chatId}`);
@@ -106,7 +138,15 @@ export default function ChatRoomInner({
   };
 
   // In ChatRoomInner.tsx - Add this function after fetchChatName function
+  // Modify fetchSenderName to return the clientId itself if it looks like a name (not an ID like USER_ALBI32)
   const fetchSenderName = async (senderId: string) => {
+    // If senderId looks like a readable name (no underscores, no USER_ prefix), return as is
+    if (!/^USER_/.test(senderId) && !senderId.includes("_")) {
+      // Cache and return senderId directly assuming it's a name
+      setSenderNames((prev) => ({ ...prev, [senderId]: senderId }));
+      return senderId;
+    }
+
     if (senderNames[senderId]) return senderNames[senderId]; // Already cached
 
     try {
@@ -126,10 +166,14 @@ export default function ChatRoomInner({
 
   const { historyBeforeSubscribe, send } = useMessages({
     listener: (event) => {
-      if (event.type === ChatMessageEventType.Created) {
-        setMessages((prev) => [...prev, event.message]);
-      }
-    },
+  if (event.type === ChatMessageEventType.Created) {
+    // Skip adding message if it is from self (already appended locally)
+    if (event.message.clientId === clientId) return;
+
+    setMessages((prev) => [...prev, event.message]);
+  }
+},
+
     onDiscontinuity: (error) => {
       console.warn("Discontinuity detected:", error);
       setLoading(true);
@@ -152,13 +196,54 @@ export default function ChatRoomInner({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = () => {
-    if (!inputValue.trim()) return;
-    send({ text: inputValue.trim() }).catch((err) =>
-      console.error("Send error", err)
-    );
-    setInputValue("");
+const sendMessage = async () => {
+  if (!inputValue.trim()) return;
+
+  const trimmedText = inputValue.trim();
+
+  const messagePayload: any = { text: trimmedText };
+
+  if (clientId === contextOwnerId && contextData) {
+    messagePayload.metadata = { context: contextData };
+    console.log("same owner!");
+    console.log("context data", contextData);
+    
+  }
+
+  // Create local message object for immediate UI update
+  const newMessage = {
+    clientId: clientId,
+    text: trimmedText,
+    metadata: messagePayload.metadata,
+    timestamp: new Date().toISOString(),
   };
+
+  setMessages((prev) => [...prev, newMessage]);
+
+  send(messagePayload)
+    .catch((err) => {
+      console.error("Send error", err);
+      setLoading(true);
+    });
+
+    const seenByUser = await axios.patch(
+  `https://play-os-backend.forgehub.in/human/human/mark-seen`,
+  {
+    userId: clientId,
+    roomType: type ? type.toUpperCase() : "", // convert to uppercase safely
+    userType: "user",
+    handled: trimmedText
+  }
+);
+
+    console.log("roomType", type);
+    
+
+    console.log("seen by user at", seenByUser.data);
+
+  setInputValue("");
+};
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,6 +266,7 @@ export default function ChatRoomInner({
 
   // In ChatRoomInner.tsx - Add this useEffect to fetch sender names when messages change
   useEffect(() => {
+    console.log("Messaegs", messages);
     if (type !== "buddy" && messages.length > 0) {
       // Fetch names for all unique senders
       const uniqueSenders = [
@@ -200,74 +286,138 @@ export default function ChatRoomInner({
   }, [messages, type]);
 
   useEffect(() => {
-  const fetchDisplayName = async () => {
-    try {
-      if (type === "buddy") {
-        setDisplayName(chatName || "Buddy Chat");
-      } else if (type === "game") {
-        // Find game by matching chatId in the user's chat mappings
-        const chatRes = await axios.get(
-          `${API_BASE_URL}/human/getChatId/${clientId}`
-        );
-        
-        // Extract newGames and pastGames from API response
-        const responseData = chatRes.data;
-        const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
-        const pastGames = Array.isArray(responseData?.pastGames) ? responseData.pastGames : [];
-        
-        // Combine both arrays to search for the chatId
-        const allGames = [...newGames, ...pastGames];
-        const mapping = allGames.find(
-          (item: any) => item.chatId === chatId
-        );
-
-        if (mapping) {
-          const gameResponse = await axios.get(
-            `${API_BASE_URL}/game/${mapping.gameId}`
+    const fetchDisplayName = async () => {
+      try {
+        if (type === "buddy") {
+          setDisplayName(chatName || "Buddy Chat");
+        } else if (type === "game") {
+          // Find game by matching chatId in the user's chat mappings
+          const chatRes = await axios.get(
+            `${API_BASE_URL}/human/getChatId/${clientId}`
           );
-          const sport = gameResponse.data.sport || "Unknown Sport";
 
-          // Format sport name with date (same as ChatList)
-          const gameDate = gameResponse.data.startTime
-            ? new Date(gameResponse.data.startTime).toLocaleDateString(
-                "en-US",
-                {
-                  month: "short",
-                  day: "numeric",
-                }
-              )
-            : "";
-          const formattedSportName = gameDate
-            ? `${sport} - ${gameDate}`
-            : sport;
+          // Extract newGames and pastGames from API response
+          const responseData = chatRes.data;
+          const newGames = Array.isArray(responseData?.newGames)
+            ? responseData.newGames
+            : [];
+          const pastGames = Array.isArray(responseData?.pastGames)
+            ? responseData.pastGames
+            : [];
+          console.log("newGameMap", newGames);
+          console.log("pastGameMap", pastGames);
 
-          setDisplayName(formattedSportName);
-        } else {
-          setDisplayName("Game Chat");
+          // Combine both arrays to search for the chatId
+          const allGames = [...newGames, ...pastGames];
+          const mapping = allGames.find((item: any) => item.chatId === chatId);
+          console.log("all games new,past", allGames);
+          console.log("mapping chatId", mapping);
+
+          if (mapping) {
+            const gameResponse = await axios.get(
+              `${API_BASE_URL}/game/${mapping.gameId}`
+            );
+            const sport = gameResponse.data.sport || "Unknown Sport";
+
+            // Format sport name with date (same as ChatList)
+            const gameDate = gameResponse.data.startTime
+              ? new Date(gameResponse.data.startTime).toLocaleDateString(
+                  "en-US",
+                  {
+                    month: "short",
+                    day: "numeric",
+                  }
+                )
+              : "";
+            const formattedSportName = gameDate
+              ? `${sport} - ${gameDate}`
+              : sport;
+
+            setDisplayName(formattedSportName);
+          } else {
+            setDisplayName("Game Chat");
+          }
+        } else if (type === "tribe") {
+          // Get all sports and find the one with matching chatId
+          const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
+          const sport = sportsResponse.data.find(
+            (s: any) => s.chatId === chatId
+          );
+          const sportName = sport?.name || "Tribe Chat";
+          setDisplayName(sportName);
         }
-      } else if (type === "tribe") {
-        // Get all sports and find the one with matching chatId
-        const sportsResponse = await axios.get(`${API_BASE_URL}/sports/all`);
-        const sport = sportsResponse.data.find(
-          (s: any) => s.chatId === chatId
+      } catch (error) {
+        console.error("Failed to fetch display name:", error);
+        setDisplayName(
+          type === "buddy"
+            ? "Buddy Chat"
+            : type === "game"
+            ? "Game Chat"
+            : "Tribe Chat"
         );
-        const sportName = sport?.name || "Tribe Chat";
-        setDisplayName(sportName);
       }
-    } catch (error) {
-      console.error("Failed to fetch display name:", error);
-      setDisplayName(
-        type === "buddy"
-          ? "Buddy Chat"
-          : type === "game"
-          ? "Game Chat"
-          : "Tribe Chat"
-      );
-    }
-  };
+    };
 
-  fetchDisplayName();
-}, [chatId, type, chatName, clientId]);
+    fetchDisplayName();
+  }, [chatId, type, chatName, clientId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const contextParam = params.get("context");
+    const clientIdFromUrl = params.get("clientId");
+    if (clientIdFromUrl) setContextOwnerId(clientIdFromUrl);
+
+    if (contextParam) {
+      try {
+        const parsed = JSON.parse(contextParam);
+        setContextData(parsed); // ✅ use for sending only in this room
+
+        // For display we keep string form, but won't use for old messages
+        const contextStr = Object.entries(parsed)
+          .map(([key, val]) =>
+            key === "sessionTemplateTitle" || key === "openDate"
+              ? `${val}`
+              : `${key}: ${val}`
+          )
+          .join(", ");
+
+        setContextInfo(contextStr);
+      } catch {
+        setContextInfo(null);
+        setContextData(null);
+      }
+    }
+  }, []);
+
+
+
+// Add this useEffect after the existing context parsing useEffect
+useEffect(() => {
+  // Store the initial room when context is first parsed (only once)
+  if (initialContextRoomRef.current === null && (contextInfo || contextData)) {
+    initialContextRoomRef.current = roomName || null;
+    console.log("Initial context room set to:", roomName);
+    return; // Don't clean up for the initial room
+  }
+  
+  // Clear URL params only when switching to a DIFFERENT room
+  if (roomName && 
+      initialContextRoomRef.current !== null && 
+      roomName !== initialContextRoomRef.current) {
+    console.log("Switching from", initialContextRoomRef.current, "to", roomName, "- clearing context");
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('context')) {
+      // Remove context param
+      params.delete('context');
+      
+      // Update URL without page reload
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }
+}, [roomName]);
+
 
   return (
     <div
@@ -288,10 +438,16 @@ export default function ChatRoomInner({
           </div>
 
           <div>
-            {activeTab === "My Buddy" && (
+            {chatNames ? (
+              <>
+                <p className="text-sm font-semibold">{chatNames}</p>
+                {activeTab === "My Game" && (
+                  <p className="text-xs text-gray-500">Online</p>
+                )}
+              </>
+            ) : activeTab === "My Buddy" ? (
               <p className="text-sm font-semibold">{chatName}</p>
-            )}
-            {activeTab !== "My Buddy" && (
+            ) : (
               <>
                 {displayName}
                 <p className="text-xs text-gray-500">
@@ -301,18 +457,19 @@ export default function ChatRoomInner({
             )}
           </div>
         </div>
-        {activeTab === "My Game" && (
-        <button
-          onClick={() => {
-            window.location.href =
-              `https://playbookingv2.forgehub.in/event-participants-details?gameId=${sessionStorage.getItem("newGameIdDirect")}`;
-          }}
-          type="button" // good practice to prevent unintended form submits
-          className="bg-blue-500 text-white text-xs font-semibold px-1 py-1 rounded shadow transition"
-
-        >
-          Game Details
-        </button>
+        {activeTab === "My Game" && !chatNames && (
+          <button
+            onClick={() => {
+              window.location.href = `https://playbookingv2.forgehub.in/event-participants-details?gameId=${
+                sessionStorage.getItem("newGameIdDirect") ||
+                localStorage.getItem("newGameDetail")
+              }`;
+            }}
+            type="button" // good practice to prevent unintended form submits
+            className="bg-blue-500 text-white text-xs font-semibold px-1 py-1 rounded shadow transition"
+          >
+            Game Details
+          </button>
         )}
       </div>
 
@@ -374,12 +531,51 @@ export default function ChatRoomInner({
                       : "bg-blue-50 text-gray-900 rounded-bl-none"
                   }`}
                 >
+                  {/* Show context from message metadata if present */}
+                  {/* Show context from message metadata if present */}
+                  {msg?.metadata?.context && (
+                    <div className="text-sm font-extrabold text-blue-400 mb-1">
+                      {(() => {
+                        const entries = Object.entries(msg.metadata.context);
+
+                        // Extract values in order, hiding duplicate "Context:" labels
+                        const formatted = entries.map(([key, val]) => {
+                          if (
+                            key === "sessionTemplateTitle" ||
+                            key === "openDate"
+                          ) {
+                            return `${val}`; // Just value
+                          }
+                          return `${key}: ${val}`;
+                        });
+
+                        // Join all into a single Context: header
+                        return `Context: ${formatted.join(", ")}`;
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Fallback to URL-based context only if metadata.context is not present */}
+                  {/* {!msg?.metadata?.context &&
+                    contextInfo &&
+                    contextOwnerId &&
+                    msg.clientId === contextOwnerId && (
+                      <div className="text-sm font-extrabold text-red-400 mb-1">
+                        context: {contextInfo}
+                      </div>
+                    )} */}
+
                   {/* Only show sender name if NOT me */}
 
                   {!isMine && msg.clientId && (
                     <div className="text-xs font-semibold text-blue-700 mb-1">
                       {type === "buddy"
                         ? chatName
+                        : type === "events"
+                        ? chatName
+                        : !/^USER_/.test(msg.clientId) &&
+                          !msg.clientId.includes("_")
+                        ? msg.clientId
                         : senderNames[msg.clientId] || "Loading..."}
                     </div>
                   )}
@@ -401,7 +597,6 @@ export default function ChatRoomInner({
 
       {/* Input */}
       <div className="flex items-center px-4 py-2 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
-        
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -410,7 +605,7 @@ export default function ChatRoomInner({
           placeholder="Type a message"
         />
         <button onClick={() => sendMessage()}>
-        <Send className="w-5 h-5 text-gray-500" />
+          <Send className="w-5 h-5 text-gray-500" />
         </button>
       </div>
     </div>

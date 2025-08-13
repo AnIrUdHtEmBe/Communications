@@ -9,9 +9,23 @@ import { ClientIdContext } from "../main";
 import { API_BASE_URL } from "./ApiBaseUrl";
 
 interface ChatListProps {
-  type: "buddy" | "game" | "tribe";
-  onOpenChat: (id: string) => void;
+  type:
+    | "buddy"
+    | "game"
+    | "tribe"
+    | "fitness"
+    | "wellness"
+    | "sports"
+    | "nutrition"
+    | "events";
+  onOpenChat: (chatId: string) => void;
   activeChat?: string | null;
+  singleRoomData?: {
+    chatId: string;
+    displayName: string;
+    roomType: string;
+    userId: string;
+  } | null;
 }
 
 type Buddy = {
@@ -44,7 +58,11 @@ type GameSummary = {
 
 // Default dummy data for fallback
 
-export default function ChatList({ type, onOpenChat }: ChatListProps) {
+export default function ChatList({
+  type,
+  onOpenChat,
+  singleRoomData,
+}: ChatListProps) {
   const [showPending, setShowPending] = useState(false);
   const [pastGames, setPastGames] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -93,14 +111,18 @@ export default function ChatList({ type, onOpenChat }: ChatListProps) {
       console.log("game new api raw", gameResponse);
 
       const responseData = gameResponse.data;
-const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
-const pastGamesFromApi = Array.isArray(responseData?.pastGames) ? responseData.pastGames : [];
+      const newGames = Array.isArray(responseData?.newGames)
+        ? responseData.newGames
+        : [];
+      const pastGamesFromApi = Array.isArray(responseData?.pastGames)
+        ? responseData.pastGames
+        : [];
 
-const gamesBooked = newGames.map((item: any) => item.gameId);
-console.log(gamesBooked, "Games booked new api");
-setGames(gamesBooked);
+      const gamesBooked = newGames.map((item: any) => item.gameId);
+      console.log(gamesBooked, "Games booked new api");
+      setGames(gamesBooked);
 
-setApiPastGames(pastGamesFromApi);
+      setApiPastGames(pastGamesFromApi);
       // Fetch fave users details
       const faveUserIds = mainUserResponse.data.faveUsers || [];
       const faveUsersResponses = await Promise.all(
@@ -168,7 +190,9 @@ setApiPastGames(pastGamesFromApi);
           `${API_BASE_URL}/human/getChatId/${clientId}`
         );
         const responseData = chatRes.data;
-const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames : [];
+        const newGames = Array.isArray(responseData?.newGames)
+          ? responseData.newGames
+          : [];
         const chatMappings: {
           courtId: string;
           startTime: string;
@@ -177,11 +201,9 @@ const newGames = Array.isArray(responseData?.newGames) ? responseData.newGames :
           chatId: string;
         }[] = newGames;
 
-
-
-const validGameIds = games.filter(gameId => 
-  chatMappings.some(mapping => mapping.gameId === gameId)
-);
+        const validGameIds = games.filter((gameId) =>
+          chatMappings.some((mapping) => mapping.gameId === gameId)
+        );
 
         // 2. Now fetch game details in parallel
         await Promise.all(
@@ -292,7 +314,7 @@ const validGameIds = games.filter(gameId =>
   const handleOpenChat = (id: string) => {
     onOpenChat(id);
     console.log("pastGames gameId", id);
-    
+
     setPastGames(false);
     setShowMyGame(false);
   };
@@ -306,7 +328,7 @@ const validGameIds = games.filter(gameId =>
 
   // Fetch buddies when type is buddy
   useEffect(() => {
-    if (type === "buddy" || "game") {
+    if (type === "buddy" || type === "game") {
       (async () => {
         const fetchedBuddies = await fetchBuddiesFromAPI(clientId);
         setBuddies(fetchedBuddies);
@@ -357,71 +379,76 @@ const validGameIds = games.filter(gameId =>
     }
   }, [type]);
 
+  useEffect(() => {
+    if (type !== "game") return;
 
-useEffect(() => {
-  if (type !== "game") return;
+    // Process past games from API
+    async function processPastGames() {
+      if (apiPastGames.length === 0) {
+        setFilteredPastGames([]);
+        return;
+      }
 
-  // Process past games from API
-  async function processPastGames() {
-    if (apiPastGames.length === 0) {
-      setFilteredPastGames([]);
-      return;
+      const processedPastGames: GameSummary[] = [];
+
+      await Promise.all(
+        apiPastGames.map(async (pastGame) => {
+          try {
+            const res = await axios.get(
+              `${API_BASE_URL}/game/${pastGame.gameId}`
+            );
+            const data = res.data;
+
+            const sport = data.sport || "Unknown Sport";
+
+            // Format sport name with date
+            const gameDate = data.startTime
+              ? new Date(data.startTime).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              : "";
+            const formattedSportName = gameDate
+              ? `${sport} - ${gameDate}`
+              : sport;
+
+            const players = data.scheduledPlayersDetails || [];
+            const membersNames = players.map((p: any) => p.name).join(", ");
+            const count = players.length || 0;
+            const time = data.startTime
+              ? new Date(data.startTime).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "N/A";
+
+            processedPastGames.push({
+              gameId: pastGame.gameId,
+              sport: formattedSportName,
+              members: membersNames,
+              count,
+              time,
+              timeFormatted: data.startTime
+                ? new Date(data.startTime).toISOString()
+                : "",
+              message: "",
+              gameChatId: pastGame.chatId,
+            });
+          } catch (err) {
+            console.error(
+              `Failed to fetch details for past game ${pastGame.gameId}`,
+              err
+            );
+          }
+        })
+      );
+
+      setFilteredPastGames(processedPastGames);
+      console.log("processed past games:", processedPastGames);
     }
 
-    const processedPastGames: GameSummary[] = [];
-
-    await Promise.all(
-      apiPastGames.map(async (pastGame) => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/game/${pastGame.gameId}`);
-          const data = res.data;
-
-          const sport = data.sport || "Unknown Sport";
-
-          // Format sport name with date
-          const gameDate = data.startTime
-            ? new Date(data.startTime).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : "";
-          const formattedSportName = gameDate
-            ? `${sport} - ${gameDate}`
-            : sport;
-
-          const players = data.scheduledPlayersDetails || [];
-          const membersNames = players.map((p: any) => p.name).join(", ");
-          const count = players.length || 0;
-          const time = data.startTime
-            ? new Date(data.startTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "N/A";
-
-          processedPastGames.push({
-            gameId: pastGame.gameId,
-            sport: formattedSportName,
-            members: membersNames,
-            count,
-            time,
-            timeFormatted: data.startTime ? new Date(data.startTime).toISOString() : "",
-            message: "",
-            gameChatId: pastGame.chatId,
-          });
-        } catch (err) {
-          console.error(`Failed to fetch details for past game ${pastGame.gameId}`, err);
-        }
-      })
-    );
-
-    setFilteredPastGames(processedPastGames);
-    console.log("processed past games:", processedPastGames);
-  }
-
-  processPastGames();
-}, [apiPastGames, type]);
-
+    processPastGames();
+  }, [apiPastGames, type]);
 
   // useEffect(() => {
   //   // Don't run if not "games" view
@@ -515,7 +542,7 @@ useEffect(() => {
           <PendingRequests onClose={() => setShowPending(false)} />
         )}
 
-        {type === "game" &&(
+        {type === "game" && (
           <>
             <ChatCard
               label="Past Games"
@@ -548,7 +575,7 @@ useEffect(() => {
                 //   return false;
                 // })
                 .filter((group) => {
-                  if(!pastGames){
+                  if (!pastGames) {
                     return true;
                   }
                   return false;
@@ -565,10 +592,14 @@ useEffect(() => {
                       setChatName(group.sport.split(" - ")[0]);
                       setTimeout(() => {
                         console.log("timeout");
-                        console.log("Clicked on game for session", group.gameId);
+                        console.log(
+                          "Clicked on game for session",
+                          group.gameId
+                        );
 
                         sessionStorage.setItem("gameId", group.gameId);
-                        sessionStorage.setItem("newGameIdDirect", group.gameId)
+                        sessionStorage.setItem("newGameIdDirect", group.gameId);
+                        localStorage.setItem("newGameDetail", group.gameId);
                         onOpenChat(group.gameChatId);
                       }, 0);
 
@@ -626,6 +657,71 @@ useEffect(() => {
               />
             ))}
           </>
+        )}
+
+        {type === "events" && (
+          <>
+            {[1, 2, 3, 4, 5].map((eventNum) => (
+              <ChatCard
+                key={`event-${eventNum}`}
+                label={`Event ${eventNum}`}
+                count={0}
+                time=""
+                message="Join the event discussion"
+                onClick={() => {
+                  setChatName(`Event ${eventNum}`);
+                  setTimeout(() => {
+                    console.log("timeout");
+                    onOpenChat(`EVENT_${eventNum}`);
+                  }, 0);
+                  setPastGames(false);
+                }}
+                icon={
+                  <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                    🎪
+                  </div>
+                }
+                subtext="Event discussion"
+              />
+            ))}
+          </>
+        )}
+
+        {(type === "fitness" ||
+          type === "wellness" ||
+          type === "sports" ||
+          type === "nutrition") && (
+          <ChatCard
+            key={singleRoomData?.chatId || `${type}-room`}
+            label={
+              singleRoomData?.displayName ||
+              `${type.charAt(0).toUpperCase() + type.slice(1)} Room`
+            }
+            count={0}
+            time=""
+            message={`${type.charAt(0).toUpperCase() + type.slice(1)} room`}
+            onClick={() => {
+              const displayName =
+                singleRoomData?.displayName ||
+                `${type.charAt(0).toUpperCase() + type.slice(1)} Room`;
+              const chatId =
+                singleRoomData?.chatId || `${type.toUpperCase()}_ROOM`;
+              setChatName(displayName);
+              setTimeout(() => {
+                console.log("timeout");
+                onOpenChat(chatId);
+              }, 0);
+              setPastGames(false);
+            }}
+            icon={
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-700">
+                {singleRoomData?.displayName?.[0] || type[0].toUpperCase()}
+              </div>
+            }
+            subtext={`${
+              type.charAt(0).toUpperCase() + type.slice(1)
+            } discussion`}
+          />
         )}
 
         {activeChatId && (

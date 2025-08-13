@@ -80,14 +80,14 @@ const PendingRequests = ({ onClose }: PendingProps) => {
           addHereTargetList: "decline",
         }
       );
-      console.log("Accepted user response:", response.data);
+      console.log("Deleted user response:", response.data);
 
       // Optionally, update local notifications state to remove accepted user
       setNotifications((prev) =>
         prev.filter((notif) => notif.userId !== userIdToAdd)
       );
     } catch (error) {
-      console.error("Error accepting user:", error);
+      console.error("Error deleting user:", error);
     }
   };
 
