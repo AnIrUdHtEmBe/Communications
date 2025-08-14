@@ -167,33 +167,35 @@ const AllChats = ({}: AllChatsProps) => {
 
   const isInChatRoom = activeChat !== null;
 
-  const tabToType = (
-    tab: string
-  ):
-    | "buddy"
-    | "game"
-    | "tribe"
-    | "fitness"
-    | "wellness"
-    | "sports"
-    | "nutrition"
-    | "events" =>
-    tab === "My Game"
-      ? "game"
-      : tab === "My Tribe"
-      ? "tribe"
-      : tab === "Fitness"
-      ? "fitness"
-      : tab === "Wellness"
-      ? "wellness"
-      : tab === "Sports"
-      ? "sports"
-      : tab === "Nutrition"
-      ? "nutrition"
-      : tab === "Events"
-      ? "events"
-      : "buddy";
-
+const tabToType = (
+  tab: string
+):
+  | "buddy"
+  | "game"
+  | "tribe"
+  | "fitness"
+  | "wellness"
+  | "sports"
+  | "nutrition"
+  | "events"
+  | "rm" => // Add "rm" type here
+  tab === "My Game"
+    ? "game"
+    : tab === "My Tribe"
+    ? "tribe"
+    : tab === "Fitness"
+    ? "fitness"
+    : tab === "Wellness"
+    ? "wellness"
+    : tab === "Sports"
+    ? "sports"
+    : tab === "Nutrition"
+    ? "nutrition"
+    : tab === "Events"
+    ? "events"
+    : tab === "RM"
+    ? "rm" // Add this line
+    : "buddy";
   const chatType = tabToType(activeTab);
 
   const getTabsArray = (hasUrlParams: boolean, urlRoomType?: string) => {
@@ -490,7 +492,50 @@ const AllChats = ({}: AllChatsProps) => {
           url.searchParams.delete("context");
 
           // Handle single room tabs (Fitness, Wellness, Sports, Nutrition)
-          if (["Fitness", "Wellness", "Sports", "Nutrition"].includes(tab)) {
+          if (["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(tab)) {
+            if (tab === "RM") {
+    // Special handling for RM tab - directly fetch and open chat
+    try {
+      const response = await axios.get(`${API_BASE_URL}/human/human/${clientId}`);
+      const roomsData = response.data;
+      
+      // Filter for RM room specifically
+      const rmRoom = roomsData.find((room: any) => room.roomType === "RM");
+      
+      if (rmRoom) {
+        // Found RM room - open it directly
+        setActiveChat(rmRoom.chatId);
+        setUrlRoomType(rmRoom.roomType);
+        setParamChatType(true);
+        
+        // Set currentRoomData for the chat room
+        const rmRoomData = {
+          chatId: rmRoom.chatId,
+          roomName: rmRoom.roomName,
+          roomType: rmRoom.roomType,
+        };
+        
+        setTimeout(() => {
+          setCurrentRoomData(rmRoomData);
+        }, 50);
+        
+        // Also update allRoomsData cache
+        setAllRoomsData(prev => ({
+          ...prev,
+          "RM": rmRoomData
+        }));
+      } else {
+        // No RM room found - show not available UI
+        setActiveChat(null);
+        setCurrentRoomData(null);
+      }
+      return;
+    } catch (error) {
+      console.error("Error fetching RM room:", error);
+      setActiveChat(null);
+      setCurrentRoomData(null);
+    }
+  }
             const roomData = await fetchRoomData(tab);
             if (roomData) {
               setActiveChat(roomData.chatId);
@@ -519,7 +564,7 @@ const AllChats = ({}: AllChatsProps) => {
           // Clear URL params based on URL type and tab switch
           if (
             (urlType === 3 &&
-              !["Fitness", "Wellness", "Sports", "Nutrition"].includes(tab)) ||
+              !["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(tab)) ||
             (urlType === 2 && tab !== "My Game")
           ) {
             const url = new URL(window.location.href);
@@ -721,7 +766,7 @@ const AllChats = ({}: AllChatsProps) => {
                     ? "mt-4"
                     : activeTab === "My Buddy" ||
                       activeTab === "My Game" ||
-                      ["Fitness", "Wellness", "Sports", "Nutrition"].includes(
+                      ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
                         activeTab
                       )
                     ? "mt-48"
@@ -743,7 +788,7 @@ const AllChats = ({}: AllChatsProps) => {
 
                       // Go back logic
                       if (
-                        ["Fitness", "Wellness", "Sports", "Nutrition"].includes(
+                        ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
                           activeTab
                         ) ||
                         activeTab === "Events"
@@ -779,7 +824,7 @@ const AllChats = ({}: AllChatsProps) => {
                     }}
                     activeTab={activeTab}
                     roomName={
-                      ["Fitness", "Wellness", "Sports", "Nutrition"].includes(
+                      ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
                         activeTab
                       ) && currentRoomData
                         ? `${currentRoomData.roomType}-${currentRoomData.roomName}-${currentRoomData.chatId}-${clientId}`
@@ -788,7 +833,7 @@ const AllChats = ({}: AllChatsProps) => {
                         : getRoomName(chatType, clientId, activeChat!)
                     }
                     chatNames={
-                      ["Fitness", "Wellness", "Sports", "Nutrition"].includes(
+                      ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
                         activeTab
                       ) && currentRoomData
                         ? currentRoomData.roomName

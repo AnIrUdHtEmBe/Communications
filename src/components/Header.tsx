@@ -15,11 +15,11 @@ interface HeaderProps {
 }
 
 const getTabsArray = (hasUrlParams: boolean, urlRoomType?: string) => {
-  const baseTabs = ["My Buddy", "My Game", "My Tribe", "Events"];
+  const baseTabs = ["My Buddy", "My Game", "My Tribe", "Events", "RM"];
   
   if (hasUrlParams && urlRoomType) {
     const roomTypeTab = urlRoomType.charAt(0) + urlRoomType.slice(1).toLowerCase();
-    return ["My Buddy", "My Tribe", "Events", "Fitness", "Wellness", "Sports", "Nutrition"];
+    return ["My Buddy", "My Tribe", "Events", "Fitness", "Wellness", "Sports", "Nutrition", "RM"];
   }
   
   return [...baseTabs, "Fitness", "Wellness", "Sports", "Nutrition"];

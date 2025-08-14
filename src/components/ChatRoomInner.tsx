@@ -17,7 +17,8 @@ export interface ChatRoomProps {
     | "wellness"
     | "sports"
     | "nutrition"
-    | "events";
+    | "events"
+    | "rm"
   chatId: string;
   chatNames: string | null;
   goBack: () => void;
@@ -346,6 +347,18 @@ const sendMessage = async () => {
           const sportName = sport?.name || "Tribe Chat";
           setDisplayName(sportName);
         }
+        else if (type === "rm") {
+  // For RM rooms, use the room name from currentRoomData or chatNames
+  if (chatNames) {
+    setDisplayName(chatNames);
+  } else {
+    setDisplayName("RM Chat");
+  }
+} else if (["fitness", "wellness", "sports", "nutrition"].includes(type || "")) {
+  // For other single room types, use chatNames or fallback
+  setDisplayName(chatNames || `${type?.charAt(0).toUpperCase()}${type?.slice(1)} Chat`);
+}
+
       } catch (error) {
         console.error("Failed to fetch display name:", error);
         setDisplayName(

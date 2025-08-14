@@ -17,7 +17,8 @@ interface ChatListProps {
     | "wellness"
     | "sports"
     | "nutrition"
-    | "events";
+    | "events"
+    | "rm"
   onOpenChat: (chatId: string) => void;
   activeChat?: string | null;
   singleRoomData?: {
