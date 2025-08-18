@@ -67,6 +67,7 @@ export default function ChatRoomInner({
   const [contextData, setContextData] = useState<any>(null);
   const [hasInitiallyMounted, setHasInitiallyMounted] = useState(false);
   const initialContextRoomRef = useRef<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [chatName, setChatName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(
@@ -99,12 +100,16 @@ export default function ChatRoomInner({
 
   // Add this useEffect after your existing useState declarations
   // Reset messages when roomName changes
+// Replace the room change useEffect
 useEffect(() => {
-  console.log("Room changed to:", roomName);
-  if (roomName) {
+  console.log("🏠 Room changed to:", roomName, "chatId:", chatId);
+  
+  if (roomName && chatId) {
     // Check if this is NOT the initial room with context
     const shouldClearContext = initialContextRoomRef.current !== null && 
                                roomName !== initialContextRoomRef.current;
+    
+    console.log("🔄 Resetting chat state for new room");
     
     // Force complete reset of chat state
     setMessages([]);
@@ -115,28 +120,39 @@ useEffect(() => {
     
     // Only clear context if switching to a different room
     if (shouldClearContext) {
+      console.log("🗑️ Clearing context for room switch");
       setContextInfo(null);
       setContextData(null);
       setContextOwnerId(null);
     }
 
-    // Force re-fetch of chat data
-    if (chatId) {
+    // Small delay to ensure state is reset before fetching new data
+    setTimeout(() => {
       fetchChatName(chatId);
-    }
+    }, 100);
   }
 }, [roomName, chatId]);
 
 
-  const fetchChatName = async (chatId: string) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/human/${chatId}`);
-      setChatName(response.data.name); // ✅ update state
-    } catch (err) {
-      console.error("Failed to fetch chat name", err);
-      setChatName("Admin");
-    }
-  };
+const fetchChatName = async (chatId: string) => {
+  console.log("🔍 Fetching chat name for chatId:", chatId);
+  
+  // Don't try to fetch user data for chat room IDs that start with CHAT_ or EVENT_
+  if (chatId.startsWith('CHAT_') || chatId.startsWith('EVENT_')) {
+    console.log("📝 Chat room ID detected, skipping user fetch");
+    setChatName("Chat Room");
+    return;
+  }
+  
+  try {
+    const response = await axios.get(`${API_BASE_URL}/human/${chatId}`);
+    console.log("✅ Chat name fetched:", response.data.name);
+    setChatName(response.data.name);
+  } catch (err) {
+    console.error("❌ Failed to fetch chat name for:", chatId, err);
+    setChatName("Chat Room");
+  }
+};
 
   // In ChatRoomInner.tsx - Add this function after fetchChatName function
   // Modify fetchSenderName to return the clientId itself if it looks like a name (not an ID like USER_ALBI32)
@@ -165,50 +181,67 @@ useEffect(() => {
   const containerHeightClass =
     activeTab === "My Tribe" ? "h-[65vh]" : "h-[75vh]";
 
-  const { historyBeforeSubscribe, send } = useMessages({
-    listener: (event) => {
-  if (event.type === ChatMessageEventType.Created) {
-    // Skip adding message if it is from self (already appended locally)
-    if (event.message.clientId === clientId) return;
+const { historyBeforeSubscribe, send } = useMessages({
+  listener: (event) => {
+    console.log("📨 Message event received:", event.type, event.message?.clientId);
+    if (event.type === ChatMessageEventType.Created) {
+      // Skip adding message if it is from self (already appended locally)
+      if (event.message.clientId === clientId) {
+        console.log("🔄 Skipping own message");
+        return;
+      }
+      console.log("➕ Adding new message from:", event.message.clientId);
+      setMessages((prev) => [...prev, event.message]);
+    }
+  },
+  onDiscontinuity: (error) => {
+    console.error("❌ Discontinuity detected:", error);
+    setLoading(true);
+  },
+});
 
-    setMessages((prev) => [...prev, event.message]);
-  }
-},
-
-    onDiscontinuity: (error) => {
-      console.warn("Discontinuity detected:", error);
-      setLoading(true);
-    },
+// Replace the useEffect that loads message history
+useEffect(() => {
+  console.log("📚 Message history effect triggered:", {
+    hasHistory: !!historyBeforeSubscribe,
+    loading,
+    roomName
   });
 
-  useEffect(() => {
-    if (historyBeforeSubscribe && loading) {
-      historyBeforeSubscribe({ limit: 50 }).then((result) => {
-        // result.items() returns an array of messages
+  if (historyBeforeSubscribe && loading) {
+    console.log("⏳ Loading message history...");
+    
+    historyBeforeSubscribe({ limit: 50 })
+      .then((result) => {
+        console.log("✅ Message history loaded:", result.items.length, "messages");
         const messages = result.items;
-
         setMessages(messages);
         setLoading(false);
+      })
+      .catch((error) => {
+        console.error("❌ Failed to load message history:", error);
+        setMessages([]);
+        setLoading(false);
       });
-    }
-  }, [historyBeforeSubscribe, loading]);
+  }
+}, [historyBeforeSubscribe, loading, roomName]); // Add roomName as dependency
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+// Replace the sendMessage function
 const sendMessage = async () => {
   if (!inputValue.trim()) return;
 
   const trimmedText = inputValue.trim();
+  console.log("📤 Sending message:", trimmedText);
 
   const messagePayload: any = { text: trimmedText };
 
   if (clientId === contextOwnerId && contextData) {
     messagePayload.metadata = { context: contextData };
-    console.log("same owner!");
-    console.log("context data", contextData);
-    
+    console.log("📎 Adding context to message:", contextData);
   }
 
   // Create local message object for immediate UI update
@@ -219,28 +252,33 @@ const sendMessage = async () => {
     timestamp: new Date().toISOString(),
   };
 
+  console.log("➕ Adding message locally:", newMessage.clientId);
   setMessages((prev) => [...prev, newMessage]);
 
-  send(messagePayload)
-    .catch((err) => {
-      console.error("Send error", err);
-      setLoading(true);
-    });
-
-    const seenByUser = await axios.patch(
-  `https://play-os-backend.forgehub.in/human/human/mark-seen`,
-  {
-    userId: clientId,
-    roomType: type ? type.toUpperCase() : "", // convert to uppercase safely
-    userType: "user",
-    handled: trimmedText
+  try {
+    await send(messagePayload);
+    console.log("✅ Message sent successfully");
+  } catch (err) {
+    console.error("❌ Send error:", err);
+    setLoading(true);
+    return;
   }
-);
 
-    console.log("roomType", type);
-    
-
-    console.log("seen by user at", seenByUser.data);
+  // Only mark as seen if send was successful
+  try {
+    const seenByUser = await axios.patch(
+      `https://play-os-backend.forgehub.in/human/human/mark-seen`,
+      {
+        userId: clientId,
+        roomType: type ? type.toUpperCase() : "",
+        userType: "user",
+        handled: trimmedText
+      }
+    );
+    console.log("✅ Message marked as seen:", seenByUser.data);
+  } catch (err) {
+    console.error("❌ Failed to mark message as seen:", err);
+  }
 
   setInputValue("");
 };
@@ -430,6 +468,39 @@ useEffect(() => {
     }
   }
 }, [roomName]);
+
+
+useEffect(() => {
+  const handleError = (event: ErrorEvent) => {
+    console.error("🚨 Component error caught:", event.error);
+    setError(event.error?.message || "An error occurred");
+  };
+
+  window.addEventListener('error', handleError);
+  return () => window.removeEventListener('error', handleError);
+}, []);
+
+// Add this early return after the error state declaration
+if (error) {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="text-center">
+        <p className="text-red-500 mb-2">Something went wrong</p>
+        <p className="text-sm text-gray-500 mb-4">{error}</p>
+        <button 
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            setMessages([]);
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+}
 
 
   return (

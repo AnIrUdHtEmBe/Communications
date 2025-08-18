@@ -12,6 +12,7 @@ interface HeaderProps {
   isNotificationsOpen?: boolean;
   hasUrlParams?: boolean;
   urlRoomType?: string;
+  roomNotifications?: { [key: string]: boolean };
 }
 
 const getTabsArray = (hasUrlParams: boolean, urlRoomType?: string) => {
@@ -35,6 +36,7 @@ export default function Header({
   isNotificationsOpen,
   hasUrlParams = false,
   urlRoomType,
+  roomNotifications = {},
 }: HeaderProps) {
   const tabs = getTabsArray(hasUrlParams, urlRoomType);
   console.log("Render NotificationBell for tab:", activeTab);
@@ -90,23 +92,38 @@ export default function Header({
               display: none;
             }
           `}</style> */}
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              ref={activeTab === tab ? activeTabRef : null}
-              onClick={() => setActiveTab?.(tab)}
-              className={`text-sm font-bold px-3 pb-2 border-b-4 transition-all duration-200 whitespace-nowrap flex-shrink-0
-                ${
-                  // Show underline only if notifications NOT open AND this tab is active
-                  !isNotificationsOpen && activeTab === tab
-                    ? "border-black text-black"
-                    : "border-transparent text-gray-700 hover:border-black hover:text-black"
-                }
-              `}
-            >
-              {tab.replace(/^My\s*/, '')}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+  const roomTypeMap: { [key: string]: string } = {
+    'Fitness': 'FITNESS',
+    'Wellness': 'WELLNESS', 
+    'Sports': 'SPORTS',
+    'Nutrition': 'NUTRITION',
+    'RM': 'RM'
+  };
+  
+  const hasNotification = roomNotifications[roomTypeMap[tab]] || false;
+  
+  return (
+    <button
+      key={tab}
+      ref={activeTab === tab ? activeTabRef : null}
+      onClick={() => setActiveTab?.(tab)}
+      className={`text-sm font-bold px-3 mt-1 pb-2 border-b-4 transition-all duration-200 whitespace-nowrap flex-shrink-0 relative
+        ${
+          !isNotificationsOpen && activeTab === tab
+            ? "border-black text-black"
+            : "border-transparent text-gray-700 hover:border-black hover:text-black"
+        }
+      `}
+    >
+      {tab.replace(/^My\s*/, '')}
+      {/* Red dot notification */}
+      {hasNotification && (
+        <div className="absolute -top-0.5 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+      )}
+    </button>
+  );
+})}
         </div>
         
 

@@ -1,16 +1,24 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Header from "../components/Header";
 import ChatList from "./ChatList";
 import ChatRoom from "../components/ChatRoom";
 
 import ChatCard from "./ChatCard";
-import { ChatRoomProvider } from "@ably/chat/react";
+import { ChatClientProvider, ChatRoomProvider } from "@ably/chat/react";
 import { ClientIdContext } from "../main";
 import axios from "axios";
 import { API_BASE_URL } from "./ApiBaseUrl";
 
 import { IoFootballOutline } from "react-icons/io5";
 import { GiBodyBalance } from "react-icons/gi"; // Game Icons
+import * as Ably from "ably";
+// import {
+//   ChatClient,
+//   ChatMessageEvent,
+//   ChatMessageEventType,
+//   LogLevel,
+// } from "@ably/chat";
+// import { AblyProvider, ChatClientProvider } from "@ably/chat/react";
 
 import {
   FaSwimmer,
@@ -29,6 +37,8 @@ import { MdSportsTennis } from "react-icons/md";
 import { TbSkateboard } from "react-icons/tb";
 import { HockeyIcon } from "../icons/HockeyIcon";
 import NavForge from "./HeaderForge";
+import { ChatClient, LogLevel } from "@ably/chat";
+import { AblyProvider } from "ably/react";
 export const PLAY_CONFIG = {
   startTime: "6:00",
   endTime: "24:00",
@@ -153,11 +163,57 @@ const AllChats = ({}: AllChatsProps) => {
       roomType: string;
     };
   }>({});
+  const clientId = useContext(ClientIdContext);
   const [showNotifications, setShowNotifications] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<
     { id: number; text: string; actions: string[]; userId: string }[]
   >([]);
+  const [monitoredRooms, setMonitoredRooms] = useState<Set<string>>(new Set());
   const [paramChatType, setParamChatType] = useState(false);
+  const strictModeRef = useRef(false);
+  const subscribedRooms = useRef<Set<string>>(new Set());
+  // Add after existing useState declarations
+const [roomNotifications, setRoomNotifications] = useState<{
+  [key: string]: boolean;
+}>({
+  FITNESS: false,
+  WELLNESS: false,
+  SPORTS: false,
+  NUTRITION: false,
+  RM: false,
+});
+
+  // Add loading states to prevent race conditions
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false);
+  const [chatLoadingStates, setChatLoadingStates] = useState<{[key: string]: boolean}>({});
+
+  // Add abort controller for request cancellation
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Add debounce for tab switching
+  const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+const [userRoomsData, setUserRoomsData] = useState<any[]>([]);
+
+// Ably setup
+const API_KEY = "0DwkUw.pjfyJw:CwXcw14bOIyzWPRLjX1W7MAoYQYEVgzk8ko3tn0dYUI";
+const realtimeClient = useMemo(
+  () =>
+    new Ably.Realtime({
+      key: API_KEY,
+      clientId: clientId || "Guest",
+    }),
+  [clientId]
+);
+const chatClient = useMemo(
+  () =>
+    new ChatClient(realtimeClient, {
+      logLevel: LogLevel.Info,
+    }),
+  [realtimeClient]
+);
+
+const roomConnections = useRef<{ [key: string]: any }>({});
 
   const [customRoomNameForParam, setCustomRoomNameForParam] = useState<{
     roomDisplayName: string;
@@ -230,10 +286,147 @@ const AllChats = ({}: AllChatsProps) => {
     ];
   };
 
-  const clientId = useContext(ClientIdContext);
+  
 
   console.log(`hello from room-${chatType}-${activeChat}`);
   const [chatIdFromParams, setChatIdFromParams] = useState(false);
+
+
+// Replace the cleanupConnections function
+const cleanupConnections = useCallback(async () => {
+  console.log("🧹 Starting connection cleanup");
+  
+  // Cancel any pending requests
+  if (abortControllerRef.current) {
+    abortControllerRef.current.abort();
+    abortControllerRef.current = null;
+  }
+
+  // Clear any pending timeouts
+  if (tabSwitchTimeoutRef.current) {
+    clearTimeout(tabSwitchTimeoutRef.current);
+    tabSwitchTimeoutRef.current = null;
+  }
+
+  // Cleanup room connections with better error handling
+  const connectionsToCleanup = Object.entries(roomConnections.current);
+  
+  for (const [roomKey, room] of connectionsToCleanup) {
+    try {
+      console.log("🗑️ Cleaning up room:", roomKey);
+      if (room && room.status !== "released" && typeof room.detach === 'function') {
+        await room.detach();
+      }
+    } catch (error) {
+      console.error(`Error detaching room ${roomKey}:`, error);
+    }
+  }
+  
+  roomConnections.current = {};
+  setMonitoredRooms(new Set());
+  subscribedRooms.current = new Set();
+  
+  console.log("✅ Connection cleanup completed");
+}, []);
+
+useEffect(() => {
+  if (strictModeRef.current) {
+    console.log("🔄 React Strict Mode double-fire detected, skipping");
+    return;
+  }
+  strictModeRef.current = true;
+  
+  return () => {
+    strictModeRef.current = false;
+  };
+}, []);
+
+  // Improved fetchRoomData with better error handling and loading states
+  const fetchRoomData = useCallback(async (roomType: string) => {
+    if (allRoomsData[roomType]) {
+      setCurrentRoomData(allRoomsData[roomType]);
+      return allRoomsData[roomType];
+    }
+
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    
+    setIsLoadingRoom(true);
+    setChatLoadingStates(prev => ({ ...prev, [roomType]: true }));
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/human/human/${clientId}`,
+        { signal: abortControllerRef.current.signal }
+      );
+      
+      const roomsData = response.data;
+
+      const roomsMap: {
+        [key: string]: { chatId: string; roomName: string; roomType: string };
+      } = {};
+      
+      roomsData.forEach((room: any) => {
+        const typeKey =
+          room.roomType.charAt(0) + room.roomType.slice(1).toLowerCase();
+        roomsMap[typeKey] = {
+          chatId: room.chatId,
+          roomName: room.roomName,
+          roomType: room.roomType,
+        };
+      });
+
+      setAllRoomsData(prev => ({ ...prev, ...roomsMap }));
+      setCurrentRoomData(roomsMap[roomType]);
+      
+      return roomsMap[roomType];
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error("Error fetching room data:", error);
+        setCurrentRoomData(null);
+      }
+      return null;
+    } finally {
+      setIsLoadingRoom(false);
+      setChatLoadingStates(prev => ({ ...prev, [roomType]: false }));
+    }
+  }, [allRoomsData, clientId]);
+
+  // Debounced chat opening function
+  const openChatWithDelay = useCallback((chatId: string, roomData?: any) => {
+    if (tabSwitchTimeoutRef.current) {
+      clearTimeout(tabSwitchTimeoutRef.current);
+    }
+
+    tabSwitchTimeoutRef.current = setTimeout(() => {
+      setActiveChat(chatId);
+      if (roomData) {
+        setCurrentRoomData(roomData);
+      }
+    }, 100); // Small delay to prevent rapid switching issues
+  }, []);
+
+  // Add this state to store current room data for single room tabs
+  const [currentRoomData, setCurrentRoomData] = useState<{
+    chatId: string;
+    roomName: string;
+    roomType: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paramChatId = params.get("chatId");
+    if (paramChatId) {
+      setChatIdFromParams(true);
+      openChatWithDelay(paramChatId);
+      setActiveTab("My Game");
+    }
+  }, [openChatWithDelay]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -427,60 +620,249 @@ const AllChats = ({}: AllChatsProps) => {
   };
 
   // Add this new state to store current room data for single room tabs
-  const [currentRoomData, setCurrentRoomData] = useState<{
-    chatId: string;
-    roomName: string;
-    roomType: string;
-  } | null>(null);
+  // const [currentRoomData, setCurrentRoomData] = useState<{
+  //   chatId: string;
+  //   roomName: string;
+  //   roomType: string;
+  // } | null>(null);
 
   // Update the fetchRoomData function to also set currentRoomData
-  const fetchRoomData = async (roomType: string) => {
-    if (allRoomsData[roomType]) {
-      setCurrentRoomData(allRoomsData[roomType]);
-      return allRoomsData[roomType];
+  // const fetchRoomData = async (roomType: string) => {
+  //   if (allRoomsData[roomType]) {
+  //     setCurrentRoomData(allRoomsData[roomType]);
+  //     return allRoomsData[roomType];
+  //   }
+
+  //   try {
+  //     const response = await axios.get(
+  //       `${API_BASE_URL}/human/human/${clientId}`
+  //     );
+  //     const roomsData = response.data;
+
+  //     // Store all rooms data
+  //     const roomsMap: {
+  //       [key: string]: { chatId: string; roomName: string; roomType: string };
+  //     } = {};
+  //     roomsData.forEach((room: any) => {
+  //       const typeKey =
+  //         room.roomType.charAt(0) + room.roomType.slice(1).toLowerCase();
+  //       roomsMap[typeKey] = {
+  //         chatId: room.chatId,
+  //         roomName: room.roomName,
+  //         roomType: room.roomType,
+  //       };
+  //     });
+  //     console.log(roomsMap, "roomData by Tab");
+  //     console.log(roomsMap[roomType], "return fetchRoomData");
+  //     setAllRoomsData(roomsMap);
+  //     setCurrentRoomData(roomsMap[roomType]);
+  //     return roomsMap[roomType];
+  //   } catch (error) {
+  //     console.error("Error fetching room data:", error);
+  //     setCurrentRoomData(null);
+  //     return null;
+  //   }
+  // };
+
+
+  // Add notification monitoring useEffect
+// Add notification monitoring useEffect
+// Add notification monitoring useEffect
+// Replace the notification monitoring useEffect in AllChats.tsx
+useEffect(() => {
+  if (!clientId || !chatClient) return;
+
+  const setupNotificationMonitoring = async () => {
+    // Don't monitor if we're currently in a chat room
+    if (activeChat !== null) {
+      console.log("🚫 Skipping notification monitoring - chat room is active");
+      return;
     }
+
+    // Add a small delay to prevent conflicts with ChatRoomInner
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
-      const response = await axios.get(
-        `${API_BASE_URL}/human/human/${clientId}`
-      );
-      const roomsData = response.data;
+      const response = await axios.get(`${API_BASE_URL}/human/human/${clientId}`);
+      const rooms = Array.isArray(response.data) ? response.data : response.data.rooms || [];
+      setUserRoomsData(rooms);
 
-      // Store all rooms data
-      const roomsMap: {
-        [key: string]: { chatId: string; roomName: string; roomType: string };
-      } = {};
-      roomsData.forEach((room: any) => {
-        const typeKey =
-          room.roomType.charAt(0) + room.roomType.slice(1).toLowerCase();
-        roomsMap[typeKey] = {
-          chatId: room.chatId,
-          roomName: room.roomName,
-          roomType: room.roomType,
-        };
-      });
-      console.log(roomsMap, "roomData by Tab");
-      console.log(roomsMap[roomType], "return fetchRoomData");
-      setAllRoomsData(roomsMap);
-      setCurrentRoomData(roomsMap[roomType]);
-      return roomsMap[roomType];
+      const roomTypes = ['FITNESS', 'WELLNESS', 'SPORTS', 'NUTRITION', 'RM'];
+      
+      for (const roomType of roomTypes) {
+        const room = rooms.find((r: any) => r.roomType === roomType);
+        if (!room) continue;
+
+        const roomKey = `${room.roomType}-${room.roomName}-${room.chatId}-${clientId}`;
+
+        // Skip if we're already monitoring this room
+        if (monitoredRooms.has(roomKey) && roomConnections.current[roomKey]) {
+          console.log("✅ Already monitoring room:", roomKey);
+          continue;
+        }
+
+        // Skip if this room is currently active in ChatRoomInner
+        if (activeChat === room.chatId) {
+          console.log("🚫 Skipping monitoring for active chat:", roomKey);
+          continue;
+        }
+
+        try {
+          console.log("🔄 Setting up monitoring for:", roomKey);
+          
+          const ablyRoom = await chatClient.rooms.get(roomKey);
+          
+          // Check if room was released during async operation
+          if (ablyRoom.status === "released") {
+            console.log("⚠️ Room was released during setup:", roomKey);
+            continue;
+          }
+          
+          if (ablyRoom.status !== "attached") {
+            await ablyRoom.attach();
+          }
+
+          // Double-check room status after attach
+          if (ablyRoom.status === "released" as any) {
+            console.log("⚠️ Room released after attach:", roomKey);
+            continue;
+          }
+
+          roomConnections.current[roomKey] = ablyRoom;
+
+          // Rest of the monitoring setup...
+          const checkInitialMessages = async () => {
+            try {
+              if (ablyRoom.status === "released") return;
+              
+              const messageHistory = await ablyRoom.messages.history({ limit: 60 });
+              const messages = messageHistory.items;
+              const seenByTeamAtDate = new Date(room.handledAt * 1000);
+              
+              let hasNewFromOthers = false;
+              
+              messages.forEach((message: any) => {
+                const messageTimestamp = message.createdAt || message.timestamp;
+                const isFromOtherUser = message.clientId !== clientId;
+                
+                if (
+                  messageTimestamp &&
+                  new Date(messageTimestamp) > seenByTeamAtDate &&
+                  isFromOtherUser
+                ) {
+                  hasNewFromOthers = true;
+                }
+              });
+
+              setRoomNotifications(prev => ({
+                ...prev,
+                [roomType]: hasNewFromOthers
+              }));
+            } catch (error) {
+              console.error(`Initial message check error for ${roomKey}:`, error);
+            }
+          };
+
+          await checkInitialMessages();
+
+          if (!subscribedRooms.current.has(roomKey)) {
+            const messageListener = (messageEvent: any) => {
+              if (ablyRoom.status === "released") return;
+              
+              const message = messageEvent.message || messageEvent;
+              const messageTimestamp = message.createdAt || message.timestamp;
+              const isFromOtherUser = message.clientId !== clientId;
+
+              setUserRoomsData((prevRooms) => {
+                const currentRoom = prevRooms.find(r => r.roomType === roomType);
+                if (!currentRoom) return prevRooms;
+                
+                const currentSeenByTeamAtDate = new Date(currentRoom.handledAt * 1000);
+
+                if (
+                  messageTimestamp &&
+                  new Date(messageTimestamp) > currentSeenByTeamAtDate &&
+                  isFromOtherUser
+                ) {
+                  setRoomNotifications(prev => ({
+                    ...prev,
+                    [roomType]: true
+                  }));
+                }
+
+                return prevRooms;
+              });
+            };
+
+            ablyRoom.messages.subscribe(messageListener);
+            subscribedRooms.current.add(roomKey);
+          }
+
+          setMonitoredRooms(prev => new Set([...prev, roomKey]));
+          console.log("✅ Successfully set up monitoring for:", roomKey);
+          
+        } catch (error) {
+          console.error(`Failed to setup monitoring for ${roomType}:`, error);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching room data:", error);
-      setCurrentRoomData(null);
-      return null;
+      console.error("Failed to setup notification monitoring:", error);
     }
   };
+
+  // Only run if not in a chat room
+  if (activeChat === null) {
+    setupNotificationMonitoring();
+  }
+
+  // Reduced interval frequency to prevent conflicts
+  const intervalId = setInterval(() => {
+    if (activeChat === null) {
+      setupNotificationMonitoring();
+    }
+  }, 30000); // Increased from 10s to 30s
+
+  return () => {
+    clearInterval(intervalId);
+  };
+}, [clientId, chatClient, activeChat]); // Removed cleanupConnections dependency
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupConnections();
+    };
+  }, [cleanupConnections]);
+
+//   useEffect(() => {
+//   if (activeChat && ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(activeTab)) {
+    // setRoomNotifications(prev => ({
+    //   ...prev,
+    //   [activeTab.toUpperCase()]: false
+    // }));
+//   }
+// }, [activeChat]);
+
+  if (!realtimeClient || !chatClient) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading chat system...</div>
+      </div>
+    );
+  } // Add activeChat as dependency
 
   // On mount, parse chatId param
 
   return (
     <>
-    
+     <AblyProvider client={realtimeClient}>
+    <ChatClientProvider client={chatClient}>
       <Header
         title={"Communications"}
         activeTab={activeTab}
         hasUrlParams={urlType === 3}
         urlRoomType={urlRoomType}
+        roomNotifications={roomNotifications}
         setActiveTab={async (tab) => {
           setActiveTab(tab);
 
@@ -497,6 +879,11 @@ const AllChats = ({}: AllChatsProps) => {
           if (
             ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(tab)
           ) {
+
+    //         setRoomNotifications(prev => ({
+    //   ...prev,
+    //   [tab.toUpperCase()]: false
+    // }));
             if (tab === "RM") {
               // Special handling for RM tab - directly fetch and open chat
               try {
@@ -885,6 +1272,8 @@ const AllChats = ({}: AllChatsProps) => {
           )}
         </>
       )}
+      </ChatClientProvider>
+  </AblyProvider>
     </>
   );
 };
