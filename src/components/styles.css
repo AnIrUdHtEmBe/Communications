@@ -1,0 +1,63 @@
+.top-nav-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  z-index: 1000; /* Ensures nav stays above other content */
+}
+
+/* LEFT SECTION */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-nav-container .--logo {
+  height: 40px;
+  width: 40px;
+}
+
+.top-nav-container img {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.top-nav-container .--center {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* RIGHT SECTION */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.--username {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: "roboto", sans-serif;
+  color: #333;
+}
+
+.--icon {
+  display: flex;
+  align-items: center;
+}
+
+.profile-icon {
+  height: 40px !important;
+  width: 40px !important;
+  border-radius: 50%;
+}

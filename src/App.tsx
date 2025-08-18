@@ -6,6 +6,7 @@ import "./App.css"
 import { useContext } from "react";
 import { ClientIdContext } from "./main";
 import FooterNav from "./components/FooterNav";
+import NavForge from "./components/HeaderForge";
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
       }}
     >
       <ChatClientReady>
+        <NavForge />
         {/* Pass activeRoom and setter to AllChats */}
         <AllChats activeRoom={activeRoom} setActiveRoom={setActiveRoom} />
         <FooterNav />
