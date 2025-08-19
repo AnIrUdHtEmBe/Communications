@@ -546,12 +546,12 @@ if (error) {
   className="shadow-lg flex flex-col relative"
   style={{
     height: activeTab === "Events" || activeTab === "My Tribe" 
-      ? 'calc(100vh - 252px)' // Adjust height for extra header
-      : 'calc(100vh - 172px)', // Original height for other tabs
+      ? 'calc(100vh - 210px)' // Adjust height for extra header
+      : 'calc(100vh - 152px)', // Original height for other tabs
     position: 'fixed',
     top: activeTab === "Events" || activeTab === "My Tribe" 
-      ? '250px' // Adjust top for extra header
-      : '170px', // Original top for other tabs
+      ? '220px' // Adjust top for extra header
+      : '150px', // Original top for other tabs
     left: 0,
     right: 0,
     width: '100%'
@@ -730,7 +730,7 @@ if (error) {
       </div>
 
       {/* Input */}
-      <div className="flex px-5 py-2 pb-18 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
+      <div className="flex px-5 py-2 pb-25 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}

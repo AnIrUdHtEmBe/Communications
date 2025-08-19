@@ -1103,9 +1103,9 @@ useEffect(() => {
               {/* Tribe Icons */}
               {chatType === "tribe" && (
                 <div
-                  className="mx-4 mt-48 flex overflow-x-auto overflow-y-hidden"
+                  className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
                   style={{
-                    height: "80px",
+                    height: "55px",
                     scrollbarWidth: "auto",
                     WebkitOverflowScrolling: "touch",
                   }}
@@ -1133,9 +1133,9 @@ useEffect(() => {
               {/* Events Icons */}
               {chatType === "events" && (
                 <div
-                  className="mx-4 mt-48 flex overflow-x-auto overflow-y-hidden"
+                  className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
                   style={{
-                    height: "60px",
+                    height: "55px",
                     scrollbarWidth: "auto",
                     WebkitOverflowScrolling: "touch",
                   }}
