@@ -546,11 +546,11 @@ if (error) {
   className="shadow-lg flex flex-col relative"
   style={{
     height: activeTab === "Events" || activeTab === "My Tribe" 
-      ? 'calc(100vh - 210px)' // Adjust height for extra header
+      ? 'calc(100vh - 200px)' // Adjust height for extra header
       : 'calc(100vh - 152px)', // Original height for other tabs
     position: 'fixed',
     top: activeTab === "Events" || activeTab === "My Tribe" 
-      ? '220px' // Adjust top for extra header
+      ? '200px' // Adjust top for extra header
       : '150px', // Original top for other tabs
     left: 0,
     right: 0,
@@ -558,7 +558,7 @@ if (error) {
   }}
 >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
+      <div className="flex items-center justify-between px-4 py-2 bg-white shadow rounded-b-2xl ">
         <div className="flex items-center gap-2">
           <button onClick={goBack}>
             <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -608,7 +608,7 @@ if (error) {
       </div>
 
       {/* Date label */}
-      <div className="mt-5 ml-49 text-center max-w-[15%] text-xs text-gray-500 py-1 bg-gray-50 border-b border-gray-200">
+      <div className="mt-1 ml-49 text-center max-w-[15%] text-xs text-gray-500 py-1 bg-gray-50 border-b border-gray-200">
         {dateLabel}
       </div>
 
@@ -730,7 +730,7 @@ if (error) {
       </div>
 
       {/* Input */}
-      <div className="flex px-5 py-2 pb-32 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
+      <div className="flex px-5 py-2 pb-34 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}

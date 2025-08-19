@@ -1105,7 +1105,7 @@ useEffect(() => {
                 <div
                   className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
                   style={{
-                    height: "55px",
+                    height: "35px",
                     scrollbarWidth: "auto",
                     WebkitOverflowScrolling: "touch",
                   }}
@@ -1116,7 +1116,7 @@ useEffect(() => {
                       <div
                         key={sport.name}
                         onClick={() => setActiveChat(sport.chatId)}
-                        className={`flex-shrink-0 cursor-pointer rounded-md w-12 h-12 mx-2 flex items-center justify-center transition ${
+                        className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
                           activeChat === sport.chatId
                             ? "bg-[#00f0ff] shadow-md"
                             : "bg-gray-200"
@@ -1135,7 +1135,7 @@ useEffect(() => {
                 <div
                   className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
                   style={{
-                    height: "55px",
+                    height: "35px",
                     scrollbarWidth: "auto",
                     WebkitOverflowScrolling: "touch",
                   }}
@@ -1144,7 +1144,7 @@ useEffect(() => {
                     <div
                       key={`event-${eventNum}A`}
                       onClick={() => setActiveChat(`EVENT_${eventNum}A`)}
-                      className={`flex-shrink-0 cursor-pointer rounded-md w-12 h-12 mx-2 flex items-center justify-center transition ${
+                      className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
                         activeChat === `EVENT_${eventNum}A`
                           ? "bg-[#00f0ff] shadow-md"
                           : "bg-gray-200"
