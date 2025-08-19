@@ -500,7 +500,7 @@ export default function ChatList({
 
   return (
     <>
-      <div className="pb-18" style={{marginTop: '14rem'}}>
+      <div className="pb-18" >
         {type === "buddy" && (
           <>
             <ChatCard

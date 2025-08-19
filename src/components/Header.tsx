@@ -69,7 +69,7 @@ export default function Header({
   return (
     <div className="p-1 fixed mt-13 top-0 w-full z-50 bg-gray-100 shadow-md rounded-b-2xl ">
       {/* Top Row with Back & Title */}
-      <div className="flex items-center px-4 py-8 font-bold">
+      <div className="flex items-center px-4 py-4 font-bold">
         {showBackButton ? (
           <button onClick={onBackClick} className="mr-2">
             <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -81,7 +81,7 @@ export default function Header({
       </div>
 
       {/* Tabs */}
-      <div className="flex justify-between items-center px-8 pb-2">
+      <div className="flex justify-between items-center px-8 ">
         <div 
           ref={scrollContainerRef}
           className="flex gap-6 items-center overflow-x-auto scrollbar-hide flex-1 mr-4"
@@ -108,7 +108,7 @@ export default function Header({
       key={tab}
       ref={activeTab === tab ? activeTabRef : null}
       onClick={() => setActiveTab?.(tab)}
-      className={`text-sm font-bold px-3 mt-1 pb-2 border-b-4 transition-all duration-200 whitespace-nowrap flex-shrink-0 relative
+      className={`overflow-x-hidden text-sm font-bold px-3 py-2 border-b-4 transition-all duration-200 whitespace-nowrap flex-shrink-0 relative flex items-center justify-center
         ${
           !isNotificationsOpen && activeTab === tab
             ? "border-black text-black"
@@ -119,7 +119,7 @@ export default function Header({
       {tab.replace(/^My\s*/, '')}
       {/* Red dot notification */}
       {hasNotification && (
-        <div className="absolute -top-0.5 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+        <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></div>
       )}
     </button>
   );
