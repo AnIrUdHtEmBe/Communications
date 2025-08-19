@@ -500,7 +500,7 @@ export default function ChatList({
 
   return (
     <>
-      <div className="pb-18" >
+      <div className="pb-18  overflow-y-auto" style={{height : 'calc(100vh - 265px)'}} >
         {type === "buddy" && (
           <>
             <ChatCard
