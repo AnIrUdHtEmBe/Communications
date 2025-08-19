@@ -730,7 +730,7 @@ if (error) {
       </div>
 
       {/* Input */}
-      <div className="flex px-5 py-2 pb-25 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
+      <div className="flex px-5 py-2 pb-32 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
