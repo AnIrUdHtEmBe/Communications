@@ -68,6 +68,9 @@ export default function ChatRoomInner({
   const [hasInitiallyMounted, setHasInitiallyMounted] = useState(false);
   const initialContextRoomRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [roomConnection, setRoomConnection] = useState<any>(null);
+  const strictModeRef = useRef(false);
+const mountedRef = useRef(true);
 
   const [chatName, setChatName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(
@@ -101,36 +104,51 @@ export default function ChatRoomInner({
   // Add this useEffect after your existing useState declarations
   // Reset messages when roomName changes
 // Replace the room change useEffect
+// Replace the room change useEffect with better deduplication
 useEffect(() => {
   console.log("🏠 Room changed to:", roomName, "chatId:", chatId);
   
-  if (roomName && chatId) {
-    // Check if this is NOT the initial room with context
-    const shouldClearContext = initialContextRoomRef.current !== null && 
-                               roomName !== initialContextRoomRef.current;
-    
-    console.log("🔄 Resetting chat state for new room");
-    
-    // Force complete reset of chat state
-    setMessages([]);
-    setLoading(true);
-    setSenderNames({});
-    setDisplayName("");
-    setChatName(null);
-    
-    // Only clear context if switching to a different room
-    if (shouldClearContext) {
-      console.log("🗑️ Clearing context for room switch");
-      setContextInfo(null);
-      setContextData(null);
-      setContextOwnerId(null);
-    }
-
-    // Small delay to ensure state is reset before fetching new data
-    setTimeout(() => {
-      fetchChatName(chatId);
-    }, 100);
+  if (!roomName || !chatId || !mountedRef.current) {
+    return;
   }
+
+  // Prevent duplicate resets for the same room
+  const currentRoomKey = `${roomName}-${chatId}`;
+  if (roomConnection?.roomKey === currentRoomKey) {
+    console.log("🔄 Same room, skipping reset");
+    return;
+  }
+  
+  // Check if this is NOT the initial room with context
+  const shouldClearContext = initialContextRoomRef.current !== null && 
+                             roomName !== initialContextRoomRef.current;
+  
+  console.log("🔄 Resetting chat state for new room");
+  
+  // Force complete reset of chat state
+  setMessages([]);
+  setLoading(true);
+  setSenderNames({});
+  setDisplayName("");
+  setChatName(null);
+  setRoomConnection({ roomKey: currentRoomKey });
+  
+  // Only clear context if switching to a different room
+  if (shouldClearContext) {
+    console.log("🗑️ Clearing context for room switch");
+    setContextInfo(null);
+    setContextData(null);
+    setContextOwnerId(null);
+  }
+
+  // Small delay to ensure state is reset before fetching new data
+  const timeoutId = setTimeout(() => {
+    if (mountedRef.current) {
+      fetchChatName(chatId);
+    }
+  }, 100);
+
+  return () => clearTimeout(timeoutId);
 }, [roomName, chatId]);
 
 
@@ -468,6 +486,26 @@ useEffect(() => {
     }
   }
 }, [roomName]);
+
+useEffect(() => {
+  mountedRef.current = true;
+  return () => {
+    mountedRef.current = false;
+    console.log("🧹 ChatRoomInner unmounting, cleaning up connections");
+  };
+}, []);
+
+useEffect(() => {
+  if (strictModeRef.current) {
+    console.log("🔄 React Strict Mode double-fire detected, skipping");
+    return;
+  }
+  strictModeRef.current = true;
+  
+  return () => {
+    strictModeRef.current = false;
+  };
+}, []);
 
 
 useEffect(() => {
