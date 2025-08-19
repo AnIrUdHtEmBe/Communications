@@ -504,9 +504,21 @@ if (error) {
 
 
   return (
-    <div
-      className={`shadow-lg flex pb-16 flex-col ${containerHeightClass} relative`}
-    >
+<div 
+  className="shadow-lg flex flex-col relative"
+  style={{
+    height: activeTab === "Events" || activeTab === "My Tribe" 
+      ? 'calc(100vh - 252px)' // Adjust height for extra header
+      : 'calc(100vh - 172px)', // Original height for other tabs
+    position: 'fixed',
+    top: activeTab === "Events" || activeTab === "My Tribe" 
+      ? '250px' // Adjust top for extra header
+      : '170px', // Original top for other tabs
+    left: 0,
+    right: 0,
+    width: '100%'
+  }}
+>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 bg-white shadow rounded-b-2xl ">
         <div className="flex items-center gap-2">
@@ -680,7 +692,7 @@ if (error) {
       </div>
 
       {/* Input */}
-      <div className="flex items-center px-4 py-2 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
+      <div className="flex px-5 py-2 pb-18 gap-2 sticky bottom-0 bg-white border-t border-gray-200 z-10">
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
