@@ -69,7 +69,7 @@ export default function Header({
   return (
     <div className="p-1 fixed mt-13 top-0 w-full z-50 bg-gray-100 shadow-md rounded-b-2xl ">
       {/* Top Row with Back & Title */}
-      <div className="flex items-center px-4 py-4 font-bold">
+      <div className="flex items-center px-4 py-3 font-bold">
         {showBackButton ? (
           <button onClick={onBackClick} className="mr-2">
             <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -77,7 +77,7 @@ export default function Header({
         ) : (
           <div className="mr-2 w-6" /> // placeholder
         )}
-        <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+        <h1 className="text-1xl font-bold text-gray-800">{title}</h1>
       </div>
 
       {/* Tabs */}

@@ -109,7 +109,7 @@ const PendingRequests = ({ onClose }: PendingProps) => {
           {/* Close button hanging above top right corner */}
           <button
             onClick={onClose}
-            className="absolute -top-4 -right-4 bg-white rounded-full px-2  shadow-lg text-black text-2xl font-bold hover:text-gray-700 focus:outline-none z-10"
+            className="absolute -top-2 -right-1 bg-white rounded-full px-2  shadow-lg text-black text-2xl font-bold hover:text-gray-700 focus:outline-none z-10"
             aria-label="Close"
           >
             &times;
