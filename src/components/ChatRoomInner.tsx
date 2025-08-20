@@ -113,7 +113,7 @@ useEffect(() => {
   }
 
   // Prevent duplicate resets for the same room
-  const currentRoomKey = `${roomName}-${chatId}`;
+  const currentRoomKey = `${chatId}`;
   if (roomConnection?.roomKey === currentRoomKey) {
     console.log("🔄 Same room, skipping reset");
     return;

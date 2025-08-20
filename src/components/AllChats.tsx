@@ -172,6 +172,7 @@ const AllChats = ({}: AllChatsProps) => {
   const [paramChatType, setParamChatType] = useState(false);
   const strictModeRef = useRef(false);
   const subscribedRooms = useRef<Set<string>>(new Set());
+  const prevActiveChatRef = useRef(activeChat);
   // Add after existing useState declarations
 const [roomNotifications, setRoomNotifications] = useState<{
   [key: string]: boolean;
@@ -489,20 +490,20 @@ useEffect(() => {
 
   function getRoomName(chatType: string, user1: string, user2: string) {
     if (chatType !== "buddy" && chatType !== "game" && chatType !== "tribe") {
-      return `room-${chatType}-${user1}`; // for game or tribe, just use user1 or chatId
+      return `${user1}`; // for game or tribe, just use user1 or chatId
     }
     if (chatType === "game") {
-      return `room-${chatType}-${user2}`;
+      return `${user2}`;
     }
 
     if (chatType === "tribe") {
-      return `room-${chatType}-${user2}`;
+      return `${user2}`;
     }
     // sort the two user IDs alphabetically
     const sorted = [user1.toLowerCase(), user2.toLowerCase()].sort();
-    console.log("Roooom", `room-${chatType}-${sorted[0]}-${sorted[1]}`);
+    console.log("Roooom", `${sorted[0]}-${sorted[1]}`);
 
-    return `room-${chatType}-${sorted[0]}-${sorted[1]}`;
+    return `${sorted[0]}-${sorted[1]}`;
   }
 
   useEffect(() => {
@@ -693,7 +694,7 @@ useEffect(() => {
         const room = rooms.find((r: any) => r.roomType === roomType);
         if (!room) continue;
 
-        const roomKey = `${room.roomType}-${room.roomName}-${room.chatId}-${clientId}`;
+        const roomKey = `${room.chatId}`;
 
         // Skip if we're already monitoring this room
         if (monitoredRooms.has(roomKey) && roomConnections.current[roomKey]) {
@@ -834,6 +835,36 @@ useEffect(() => {
     };
   }, [cleanupConnections]);
 
+
+// useEffect(() => {
+//   const handleChatExit = async () => {
+//     if (prevActiveChatRef.current !== null && activeChat === null) {
+//       const roomTypeUpper = activeTab.toUpperCase();
+//       if (["FITNESS", "WELLNESS", "SPORTS", "NUTRITION", "RM"].includes(roomTypeUpper)) {
+//         try {
+//           await axios.patch(
+//             `${API_BASE_URL}/human/human/mark-seen`,
+//             {
+//               userId: clientId,
+//               roomType: roomTypeUpper,
+//               userType: "user",
+//               handled: "",
+//             }
+//           );
+//           setRoomNotifications(prev => ({
+//             ...prev,
+//             [roomTypeUpper]: false
+//           }));
+//         } catch (error) {
+//           console.error("Error marking as seen:", error);
+//         }
+//       }
+//     }
+//   };
+
+//   handleChatExit();
+//   prevActiveChatRef.current = activeChat;
+// }, [activeChat, activeTab, clientId]);
 //   useEffect(() => {
 //   if (activeChat && ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(activeTab)) {
     // setRoomNotifications(prev => ({
@@ -1056,7 +1087,7 @@ useEffect(() => {
                   );
                 }}
                 activeTab="My Game"
-                roomName={`room-game-${activeChat}`}
+                roomName={`${activeChat}`}
                 chatNames={""}
               />
             </div>
@@ -1087,13 +1118,7 @@ useEffect(() => {
                 }}
                 activeTab="My Game"
                 roomName={
-                  customRoomNameForParam.roomType +
-                  "-" +
-                  customRoomNameForParam.roomDisplayName +
-                  "-" +
-                  customRoomNameForParam.roomChatId +
-                  "-" +
-                  customRoomNameForParam.userId
+                  customRoomNameForParam.roomChatId
                 }
                 chatNames={customRoomNameForParam.roomDisplayName}
               />
@@ -1235,7 +1260,7 @@ useEffect(() => {
                         "Nutrition",
                         "RM",
                       ].includes(activeTab) && currentRoomData
-                        ? `${currentRoomData.roomType}-${currentRoomData.roomName}-${currentRoomData.chatId}-${clientId}`
+                        ? `${currentRoomData.chatId}`
                         : activeTab === "Events"
                         ? `room-events-${activeChat}`
                         : getRoomName(chatType, clientId, activeChat!)

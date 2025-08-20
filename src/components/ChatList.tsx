@@ -730,7 +730,7 @@ export default function ChatList({
             chatId={activeChatId}
             goBack={() => setActiveChatId(null)}
             type={type}
-            roomName={`room-${type}-${activeChatId}`}
+            roomName={`${activeChatId}`}
             chatNames={chatName}
           />
         )}

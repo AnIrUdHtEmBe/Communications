@@ -10,7 +10,7 @@ export default function ChatRoomWrapper(props: ChatRoomProps) {
   const clientId = useContext(ClientIdContext);
   return (
     <ChatRoomProvider
-      name={props.roomName || `room-${props.type}-${props.chatId}`}
+      name={props.roomName || `${props.chatId}`}
       // @ts-ignore
       
     >
