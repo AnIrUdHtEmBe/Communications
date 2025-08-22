@@ -9,6 +9,7 @@ import { enqueueSnackbar } from "notistack";
 import { TbMessage } from "react-icons/tb";
 import { ClientIdContext } from "../main";
 import axios from "axios";
+import forgeLogo from '../../public/image.png'
 
 
 const NavForge = () => {
@@ -70,7 +71,7 @@ userName();
           className="--logo"
           // Just keep a static click event or remove if not needed
         >
-          <img src="public\image.png" alt="Logo" />
+          <img src={forgeLogo} alt="Logo" />
         </div>
         <div className="--center">
           <span>Sarjapur</span>
