@@ -70,7 +70,7 @@ userName();
           className="--logo"
           // Just keep a static click event or remove if not needed
         >
-          <img src="Play_Logo.svg" alt="Logo" />
+          <img src="public\image.png" alt="Logo" />
         </div>
         <div className="--center">
           <span>Sarjapur</span>

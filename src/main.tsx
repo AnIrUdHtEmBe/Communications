@@ -6,6 +6,8 @@ import { ChatClientProvider } from "@ably/chat/react";
 import { AblyProvider } from "ably/react";
 import App from "./App";
 import { v4 as uuidv4 } from "uuid";
+// src/main.tsx
+import './index.css';
 
 // Create a React Context for clientId
 export const ClientIdContext = createContext<string>("");
