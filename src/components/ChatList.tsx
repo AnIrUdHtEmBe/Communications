@@ -142,7 +142,7 @@ export default function ChatList({
           return {
             userId,
             avatar:
-              response.data || "https://randomuser.me/api/portraits/men/78.jpg",
+              response.data.photoThumbUrl || "https://randomuser.me/api/portraits/men/78.jpg",
           };
         } catch (err) {
           return {

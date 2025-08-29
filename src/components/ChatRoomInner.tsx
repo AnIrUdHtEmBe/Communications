@@ -74,32 +74,39 @@ const mountedRef = useRef(true);
 
   const [chatName, setChatName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>(
-    "https://randomuser.me/api/portraits/men/78.jpg" // default avatar
+    "https://randomuser.me/api/portraits/men/77.jpg" // default avatar
   );
 
-  useEffect(() => {
-    if (!chatId) return;
+useEffect(() => {
+  if (!chatId) return;
 
-    const fetchAvatar = async () => {
-      try {
-        // POST per API docs, sending chatId as a JSON string
-        const response = await axios.post(
-          `${API_BASE_URL}/human/human/get-photo`,
-          `${chatId}` // note: stringify chatId because API expects `string` body
-        );
-        if (response.data) {
-          setAvatarUrl(response.data);
-        } else {
-          setAvatarUrl("https://randomuser.me/api/portraits/men/78.jpg");
-        }
-      } catch (err) {
-        console.error("Failed to fetch avatar photo", err);
-        setAvatarUrl("https://randomuser.me/api/portraits/men/78.jpg");
+  const fetchAvatar = async () => {
+    try {
+      console.log("🖼️ Fetching avatar for chatId:", chatId);
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/human/human/get-photo`,
+        `${chatId}`
+      );
+      
+      console.log("📸 Avatar API response:", response.data);
+      
+      // Check if response.data exists AND has a valid photoThumbUrl
+      if (response.data && response.data.photoThumbUrl && response.data.photoThumbUrl.trim() !== '') {
+        setAvatarUrl(response.data.photoThumbUrl);
+        console.log("✅ Avatar loaded:", response.data.photoThumbUrl);
+      } else {
+        console.log("⚠️ No valid photoThumbUrl found, using fallback");
+        setAvatarUrl("https://randomuser.me/api/portraits/men/77.jpg");
       }
-    };
+    } catch (err) {
+      console.error("❌ Failed to fetch avatar photo:", err);
+      setAvatarUrl("https://randomuser.me/api/portraits/men/77.jpg");
+    }
+  };
 
-    fetchAvatar();
-  }, [chatId]);
+  fetchAvatar();
+}, [chatId]);
 
   // Add this useEffect after your existing useState declarations
   // Reset messages when roomName changes
@@ -651,7 +658,7 @@ if (error) {
                     src={
                       type === "buddy"
                         ? avatarUrl
-                        : "https://randomuser.me/api/portraits/men/78.jpg"
+                        : "https://randomuser.me/api/portraits/men/77.jpg"
                     }
                     alt={msg.clientId}
                     className="w-7 h-7 rounded-full mr-2 mb-5 border-2 border-white shadow-sm object-cover"

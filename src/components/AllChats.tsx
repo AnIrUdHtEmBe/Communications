@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../components/Header";
 import ChatList from "./ChatList";
 import ChatRoom from "../components/ChatRoom";
@@ -174,47 +181,49 @@ const AllChats = ({}: AllChatsProps) => {
   const subscribedRooms = useRef<Set<string>>(new Set());
   const prevActiveChatRef = useRef(activeChat);
   // Add after existing useState declarations
-const [roomNotifications, setRoomNotifications] = useState<{
-  [key: string]: boolean;
-}>({
-  FITNESS: false,
-  WELLNESS: false,
-  SPORTS: false,
-  NUTRITION: false,
-  RM: false,
-});
+  const [roomNotifications, setRoomNotifications] = useState<{
+    [key: string]: boolean;
+  }>({
+    FITNESS: false,
+    WELLNESS: false,
+    SPORTS: false,
+    NUTRITION: false,
+    RM: false,
+  });
 
   // Add loading states to prevent race conditions
   const [isLoadingRoom, setIsLoadingRoom] = useState(false);
-  const [chatLoadingStates, setChatLoadingStates] = useState<{[key: string]: boolean}>({});
+  const [chatLoadingStates, setChatLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Add abort controller for request cancellation
   const abortControllerRef = useRef<AbortController | null>(null);
-  
+
   // Add debounce for tab switching
   const tabSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-const [userRoomsData, setUserRoomsData] = useState<any[]>([]);
+  const [userRoomsData, setUserRoomsData] = useState<any[]>([]);
 
-// Ably setup
-const API_KEY = "0DwkUw.pjfyJw:CwXcw14bOIyzWPRLjX1W7MAoYQYEVgzk8ko3tn0dYUI";
-const realtimeClient = useMemo(
-  () =>
-    new Ably.Realtime({
-      key: API_KEY,
-      clientId: clientId || "Guest",
-    }),
-  [clientId]
-);
-const chatClient = useMemo(
-  () =>
-    new ChatClient(realtimeClient, {
-      logLevel: LogLevel.Info,
-    }),
-  [realtimeClient]
-);
+  // Ably setup
+  const API_KEY = "0DwkUw.pjfyJw:CwXcw14bOIyzWPRLjX1W7MAoYQYEVgzk8ko3tn0dYUI";
+  const realtimeClient = useMemo(
+    () =>
+      new Ably.Realtime({
+        key: API_KEY,
+        clientId: clientId || "Guest",
+      }),
+    [clientId]
+  );
+  const chatClient = useMemo(
+    () =>
+      new ChatClient(realtimeClient, {
+        logLevel: LogLevel.Info,
+      }),
+    [realtimeClient]
+  );
 
-const roomConnections = useRef<{ [key: string]: any }>({});
+  const roomConnections = useRef<{ [key: string]: any }>({});
 
   const [customRoomNameForParam, setCustomRoomNameForParam] = useState<{
     roomDisplayName: string;
@@ -287,116 +296,120 @@ const roomConnections = useRef<{ [key: string]: any }>({});
     ];
   };
 
-  
-
   console.log(`hello from room-${chatType}-${activeChat}`);
   const [chatIdFromParams, setChatIdFromParams] = useState(false);
 
+  // Replace the cleanupConnections function
+  const cleanupConnections = useCallback(async () => {
+    console.log("🧹 Starting connection cleanup");
 
-// Replace the cleanupConnections function
-const cleanupConnections = useCallback(async () => {
-  console.log("🧹 Starting connection cleanup");
-  
-  // Cancel any pending requests
-  if (abortControllerRef.current) {
-    abortControllerRef.current.abort();
-    abortControllerRef.current = null;
-  }
-
-  // Clear any pending timeouts
-  if (tabSwitchTimeoutRef.current) {
-    clearTimeout(tabSwitchTimeoutRef.current);
-    tabSwitchTimeoutRef.current = null;
-  }
-
-  // Cleanup room connections with better error handling
-  const connectionsToCleanup = Object.entries(roomConnections.current);
-  
-  for (const [roomKey, room] of connectionsToCleanup) {
-    try {
-      console.log("🗑️ Cleaning up room:", roomKey);
-      if (room && room.status !== "released" && typeof room.detach === 'function') {
-        await room.detach();
-      }
-    } catch (error) {
-      console.error(`Error detaching room ${roomKey}:`, error);
-    }
-  }
-  
-  roomConnections.current = {};
-  setMonitoredRooms(new Set());
-  subscribedRooms.current = new Set();
-  
-  console.log("✅ Connection cleanup completed");
-}, []);
-
-useEffect(() => {
-  if (strictModeRef.current) {
-    console.log("🔄 React Strict Mode double-fire detected, skipping");
-    return;
-  }
-  strictModeRef.current = true;
-  
-  return () => {
-    strictModeRef.current = false;
-  };
-}, []);
-
-  // Improved fetchRoomData with better error handling and loading states
-  const fetchRoomData = useCallback(async (roomType: string) => {
-    if (allRoomsData[roomType]) {
-      setCurrentRoomData(allRoomsData[roomType]);
-      return allRoomsData[roomType];
-    }
-
-    // Cancel previous request if exists
+    // Cancel any pending requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
 
-    // Create new abort controller
-    abortControllerRef.current = new AbortController();
-    
-    setIsLoadingRoom(true);
-    setChatLoadingStates(prev => ({ ...prev, [roomType]: true }));
+    // Clear any pending timeouts
+    if (tabSwitchTimeoutRef.current) {
+      clearTimeout(tabSwitchTimeoutRef.current);
+      tabSwitchTimeoutRef.current = null;
+    }
 
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/human/human/${clientId}`,
-        { signal: abortControllerRef.current.signal }
-      );
-      
-      const roomsData = response.data;
+    // Cleanup room connections with better error handling
+    const connectionsToCleanup = Object.entries(roomConnections.current);
 
-      const roomsMap: {
-        [key: string]: { chatId: string; roomName: string; roomType: string };
-      } = {};
-      
-      roomsData.forEach((room: any) => {
-        const typeKey =
-          room.roomType.charAt(0) + room.roomType.slice(1).toLowerCase();
-        roomsMap[typeKey] = {
-          chatId: room.chatId,
-          roomName: room.roomName,
-          roomType: room.roomType,
-        };
-      });
-
-      setAllRoomsData(prev => ({ ...prev, ...roomsMap }));
-      setCurrentRoomData(roomsMap[roomType]);
-      
-      return roomsMap[roomType];
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching room data:", error);
-        setCurrentRoomData(null);
+    for (const [roomKey, room] of connectionsToCleanup) {
+      try {
+        console.log("🗑️ Cleaning up room:", roomKey);
+        if (
+          room &&
+          room.status !== "released" &&
+          typeof room.detach === "function"
+        ) {
+          await room.detach();
+        }
+      } catch (error) {
+        console.error(`Error detaching room ${roomKey}:`, error);
       }
-      return null;
-    } finally {
-      setIsLoadingRoom(false);
-      setChatLoadingStates(prev => ({ ...prev, [roomType]: false }));
     }
-  }, [allRoomsData, clientId]);
+
+    roomConnections.current = {};
+    setMonitoredRooms(new Set());
+    subscribedRooms.current = new Set();
+
+    console.log("✅ Connection cleanup completed");
+  }, []);
+
+  useEffect(() => {
+    if (strictModeRef.current) {
+      console.log("🔄 React Strict Mode double-fire detected, skipping");
+      return;
+    }
+    strictModeRef.current = true;
+
+    return () => {
+      strictModeRef.current = false;
+    };
+  }, []);
+
+  // Improved fetchRoomData with better error handling and loading states
+  const fetchRoomData = useCallback(
+    async (roomType: string) => {
+      if (allRoomsData[roomType]) {
+        setCurrentRoomData(allRoomsData[roomType]);
+        return allRoomsData[roomType];
+      }
+
+      // Cancel previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+
+      setIsLoadingRoom(true);
+      setChatLoadingStates((prev) => ({ ...prev, [roomType]: true }));
+
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/human/human/${clientId}`,
+          { signal: abortControllerRef.current.signal }
+        );
+
+        const roomsData = response.data;
+
+        const roomsMap: {
+          [key: string]: { chatId: string; roomName: string; roomType: string };
+        } = {};
+
+        roomsData.forEach((room: any) => {
+          const typeKey =
+            room.roomType.charAt(0) + room.roomType.slice(1).toLowerCase();
+          roomsMap[typeKey] = {
+            chatId: room.chatId,
+            roomName: room.roomName,
+            roomType: room.roomType,
+          };
+        });
+
+        setAllRoomsData((prev) => ({ ...prev, ...roomsMap }));
+        setCurrentRoomData(roomsMap[roomType]);
+
+        return roomsMap[roomType];
+      } catch (error: any) {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching room data:", error);
+          setCurrentRoomData(null);
+        }
+        return null;
+      } finally {
+        setIsLoadingRoom(false);
+        setChatLoadingStates((prev) => ({ ...prev, [roomType]: false }));
+      }
+    },
+    [allRoomsData, clientId]
+  );
 
   // Debounced chat opening function
   const openChatWithDelay = useCallback((chatId: string, roomData?: any) => {
@@ -665,168 +678,182 @@ useEffect(() => {
   //   }
   // };
 
-
   // Add notification monitoring useEffect
-// Add notification monitoring useEffect
-// Add notification monitoring useEffect
-// Replace the notification monitoring useEffect in AllChats.tsx
-useEffect(() => {
-  if (!clientId || !chatClient) return;
+  // Add notification monitoring useEffect
+  // Add notification monitoring useEffect
+  // Replace the notification monitoring useEffect in AllChats.tsx
+  useEffect(() => {
+    if (!clientId || !chatClient) return;
 
-  const setupNotificationMonitoring = async () => {
-    // Don't monitor if we're currently in a chat room
-    if (activeChat !== null) {
-      console.log("🚫 Skipping notification monitoring - chat room is active");
-      return;
-    }
+    const setupNotificationMonitoring = async () => {
+      // Don't monitor if we're currently in a chat room
+      if (activeChat !== null) {
+        console.log(
+          "🚫 Skipping notification monitoring - chat room is active"
+        );
+        return;
+      }
 
-    // Add a small delay to prevent conflicts with ChatRoomInner
-    await new Promise(resolve => setTimeout(resolve, 500));
+      // Add a small delay to prevent conflicts with ChatRoomInner
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    try {
-      const response = await axios.get(`${API_BASE_URL}/human/human/${clientId}`);
-      const rooms = Array.isArray(response.data) ? response.data : response.data.rooms || [];
-      setUserRoomsData(rooms);
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/human/human/${clientId}`
+        );
+        const rooms = Array.isArray(response.data)
+          ? response.data
+          : response.data.rooms || [];
+        setUserRoomsData(rooms);
 
-      const roomTypes = ['FITNESS', 'WELLNESS', 'SPORTS', 'NUTRITION', 'RM'];
-      
-      for (const roomType of roomTypes) {
-        const room = rooms.find((r: any) => r.roomType === roomType);
-        if (!room) continue;
+        const roomTypes = ["FITNESS", "WELLNESS", "SPORTS", "NUTRITION", "RM"];
 
-        const roomKey = `${room.chatId}`;
+        for (const roomType of roomTypes) {
+          const room = rooms.find((r: any) => r.roomType === roomType);
+          if (!room) continue;
 
-        // Skip if we're already monitoring this room
-        if (monitoredRooms.has(roomKey) && roomConnections.current[roomKey]) {
-          console.log("✅ Already monitoring room:", roomKey);
-          continue;
-        }
+          const roomKey = `${room.chatId}`;
 
-        // Skip if this room is currently active in ChatRoomInner
-        if (activeChat === room.chatId) {
-          console.log("🚫 Skipping monitoring for active chat:", roomKey);
-          continue;
-        }
-
-        try {
-          console.log("🔄 Setting up monitoring for:", roomKey);
-          
-          const ablyRoom = await chatClient.rooms.get(roomKey);
-          
-          // Check if room was released during async operation
-          if (ablyRoom.status === "released") {
-            console.log("⚠️ Room was released during setup:", roomKey);
-            continue;
-          }
-          
-          if (ablyRoom.status !== "attached") {
-            await ablyRoom.attach();
-          }
-
-          // Double-check room status after attach
-          if (ablyRoom.status === "released" as any) {
-            console.log("⚠️ Room released after attach:", roomKey);
+          // Skip if we're already monitoring this room
+          if (monitoredRooms.has(roomKey) && roomConnections.current[roomKey]) {
+            console.log("✅ Already monitoring room:", roomKey);
             continue;
           }
 
-          roomConnections.current[roomKey] = ablyRoom;
+          // Skip if this room is currently active in ChatRoomInner
+          if (activeChat === room.chatId) {
+            console.log("🚫 Skipping monitoring for active chat:", roomKey);
+            continue;
+          }
 
-          // Rest of the monitoring setup...
-          const checkInitialMessages = async () => {
-            try {
-              if (ablyRoom.status === "released") return;
-              
-              const messageHistory = await ablyRoom.messages.history({ limit: 60 });
-              const messages = messageHistory.items;
-              const seenByTeamAtDate = new Date(room.handledAt * 1000);
-              
-              let hasNewFromOthers = false;
-              
-              messages.forEach((message: any) => {
-                const messageTimestamp = message.createdAt || message.timestamp;
-                const isFromOtherUser = message.clientId !== clientId;
-                
-                if (
-                  messageTimestamp &&
-                  new Date(messageTimestamp) > seenByTeamAtDate &&
-                  isFromOtherUser
-                ) {
-                  hasNewFromOthers = true;
-                }
-              });
+          try {
+            console.log("🔄 Setting up monitoring for:", roomKey);
 
-              setRoomNotifications(prev => ({
-                ...prev,
-                [roomType]: hasNewFromOthers
-              }));
-            } catch (error) {
-              console.error(`Initial message check error for ${roomKey}:`, error);
+            const ablyRoom = await chatClient.rooms.get(roomKey);
+
+            // Check if room was released during async operation
+            if (ablyRoom.status === "released") {
+              console.log("⚠️ Room was released during setup:", roomKey);
+              continue;
             }
-          };
 
-          await checkInitialMessages();
+            if (ablyRoom.status !== "attached") {
+              await ablyRoom.attach();
+            }
 
-          if (!subscribedRooms.current.has(roomKey)) {
-            const messageListener = (messageEvent: any) => {
-              if (ablyRoom.status === "released") return;
-              
-              const message = messageEvent.message || messageEvent;
-              const messageTimestamp = message.createdAt || message.timestamp;
-              const isFromOtherUser = message.clientId !== clientId;
+            // Double-check room status after attach
+            if (ablyRoom.status === ("released" as any)) {
+              console.log("⚠️ Room released after attach:", roomKey);
+              continue;
+            }
 
-              setUserRoomsData((prevRooms) => {
-                const currentRoom = prevRooms.find(r => r.roomType === roomType);
-                if (!currentRoom) return prevRooms;
-                
-                const currentSeenByTeamAtDate = new Date(currentRoom.handledAt * 1000);
+            roomConnections.current[roomKey] = ablyRoom;
 
-                if (
-                  messageTimestamp &&
-                  new Date(messageTimestamp) > currentSeenByTeamAtDate &&
-                  isFromOtherUser
-                ) {
-                  setRoomNotifications(prev => ({
-                    ...prev,
-                    [roomType]: true
-                  }));
-                }
+            // Rest of the monitoring setup...
+            const checkInitialMessages = async () => {
+              try {
+                if (ablyRoom.status === "released") return;
 
-                return prevRooms;
-              });
+                const messageHistory = await ablyRoom.messages.history({
+                  limit: 60,
+                });
+                const messages = messageHistory.items;
+                const seenByTeamAtDate = new Date(room.handledAt * 1000);
+
+                let hasNewFromOthers = false;
+
+                messages.forEach((message: any) => {
+                  const messageTimestamp =
+                    message.createdAt || message.timestamp;
+                  const isFromOtherUser = message.clientId !== clientId;
+
+                  if (
+                    messageTimestamp &&
+                    new Date(messageTimestamp) > seenByTeamAtDate &&
+                    isFromOtherUser
+                  ) {
+                    hasNewFromOthers = true;
+                  }
+                });
+
+                setRoomNotifications((prev) => ({
+                  ...prev,
+                  [roomType]: hasNewFromOthers,
+                }));
+              } catch (error) {
+                console.error(
+                  `Initial message check error for ${roomKey}:`,
+                  error
+                );
+              }
             };
 
-            ablyRoom.messages.subscribe(messageListener);
-            subscribedRooms.current.add(roomKey);
+            await checkInitialMessages();
+
+            if (!subscribedRooms.current.has(roomKey)) {
+              const messageListener = (messageEvent: any) => {
+                if (ablyRoom.status === "released") return;
+
+                const message = messageEvent.message || messageEvent;
+                const messageTimestamp = message.createdAt || message.timestamp;
+                const isFromOtherUser = message.clientId !== clientId;
+
+                setUserRoomsData((prevRooms) => {
+                  const currentRoom = prevRooms.find(
+                    (r) => r.roomType === roomType
+                  );
+                  if (!currentRoom) return prevRooms;
+
+                  const currentSeenByTeamAtDate = new Date(
+                    currentRoom.handledAt * 1000
+                  );
+
+                  if (
+                    messageTimestamp &&
+                    new Date(messageTimestamp) > currentSeenByTeamAtDate &&
+                    isFromOtherUser
+                  ) {
+                    setRoomNotifications((prev) => ({
+                      ...prev,
+                      [roomType]: true,
+                    }));
+                  }
+
+                  return prevRooms;
+                });
+              };
+
+              ablyRoom.messages.subscribe(messageListener);
+              subscribedRooms.current.add(roomKey);
+            }
+
+            setMonitoredRooms((prev) => new Set([...prev, roomKey]));
+            console.log("✅ Successfully set up monitoring for:", roomKey);
+          } catch (error) {
+            console.error(`Failed to setup monitoring for ${roomType}:`, error);
           }
-
-          setMonitoredRooms(prev => new Set([...prev, roomKey]));
-          console.log("✅ Successfully set up monitoring for:", roomKey);
-          
-        } catch (error) {
-          console.error(`Failed to setup monitoring for ${roomType}:`, error);
         }
+      } catch (error) {
+        console.error("Failed to setup notification monitoring:", error);
       }
-    } catch (error) {
-      console.error("Failed to setup notification monitoring:", error);
-    }
-  };
+    };
 
-  // Only run if not in a chat room
-  if (activeChat === null) {
-    setupNotificationMonitoring();
-  }
-
-  // Reduced interval frequency to prevent conflicts
-  const intervalId = setInterval(() => {
+    // Only run if not in a chat room
     if (activeChat === null) {
       setupNotificationMonitoring();
     }
-  }, 30000); // Increased from 10s to 30s
 
-  return () => {
-    clearInterval(intervalId);
-  };
-}, [clientId, chatClient, activeChat]); // Removed cleanupConnections dependency
+    // Reduced interval frequency to prevent conflicts
+    const intervalId = setInterval(() => {
+      if (activeChat === null) {
+        setupNotificationMonitoring();
+      }
+    }, 30000); // Increased from 10s to 30s
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [clientId, chatClient, activeChat]); // Removed cleanupConnections dependency
 
   // Cleanup on unmount
   useEffect(() => {
@@ -835,44 +862,155 @@ useEffect(() => {
     };
   }, [cleanupConnections]);
 
+  // Add this new useEffect after the existing notification monitoring useEffect
+  // Add this new useEffect after the existing notification monitoring useEffect
+  useEffect(() => {
+    if (!activeChat || !chatClient || !clientId) return;
 
-// useEffect(() => {
-//   const handleChatExit = async () => {
-//     if (prevActiveChatRef.current !== null && activeChat === null) {
-//       const roomTypeUpper = activeTab.toUpperCase();
-//       if (["FITNESS", "WELLNESS", "SPORTS", "NUTRITION", "RM"].includes(roomTypeUpper)) {
-//         try {
-//           await axios.patch(
-//             `${API_BASE_URL}/human/human/mark-seen`,
-//             {
-//               userId: clientId,
-//               roomType: roomTypeUpper,
-//               userType: "user",
-//               handled: "",
-//             }
-//           );
-//           setRoomNotifications(prev => ({
-//             ...prev,
-//             [roomTypeUpper]: false
-//           }));
-//         } catch (error) {
-//           console.error("Error marking as seen:", error);
-//         }
-//       }
-//     }
-//   };
-//git stash
-//   handleChatExit();
-//   prevActiveChatRef.current = activeChat;
-// }, [activeChat, activeTab, clientId]);
-//   useEffect(() => {
-//   if (activeChat && ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(activeTab)) {
-    // setRoomNotifications(prev => ({
-    //   ...prev,
-    //   [activeTab.toUpperCase()]: false
-    // }));
-//   }
-// }, [activeChat]);
+    const setupPresence = async () => {
+      try {
+        let room = roomConnections.current[activeChat];
+        if (!room) {
+          room = await chatClient.rooms.get(activeChat);
+          await room.attach();
+          roomConnections.current[activeChat] = room;
+        }
+
+        await room.presence.enter({
+          action: "entered",
+          userId: clientId,
+          roomId: activeChat,
+          timestamp: Date.now(),
+        });
+
+        // Log own enter manually
+        console.log(
+          `Presence event: enter by ${clientId}`,
+          { status: "online" },
+          {
+            action: "entered",
+            userId: clientId,
+            roomId: activeChat,
+            timestamp: Date.now(),
+          }
+        );
+
+        // Get and log current presence (presents)
+        const currentMembers = await room.presence.get();
+        console.log(currentMembers, "current member");
+        
+        currentMembers.forEach((member: { clientId: any; data: any }) => {
+          console.log(
+            `Presence event: present by ${member.clientId}`,
+            member.data,
+            {
+              action: "entered",
+              userId: clientId,
+              roomId: activeChat,
+              timestamp: Date.now(),
+            }
+          );
+        });
+
+        // Add presence subscription for logging future events
+        const presenceListener = (member: {
+          action: any;
+          clientId: any;
+          data: any;
+        }) => {
+          console.log(
+            `Presence event: ${member.action} by ${member.clientId}`,
+            member.data
+          );
+
+          // Post to backend (assuming endpoint; adjust if needed)
+          // axios.post(`${API_BASE_URL}/human/presence-log`, {
+          //   roomId: activeChat,
+          //   action: member.action,
+          //   clientId: member.clientId,
+          //   data: member.data,
+          //   timestamp: new Date().toISOString(),
+          // }).catch(err => console.error('Presence log error:', err));
+        };
+
+        room.presence.subscribe(presenceListener);
+
+        // Store listener for cleanup
+        roomConnections.current[activeChat].presenceListener = presenceListener;
+      } catch (error) {
+        console.error("Error setting up presence:", error);
+      }
+    };
+
+    setupPresence();
+
+    return () => {
+      const cleanup = async () => {
+        const room = roomConnections.current[activeChat];
+        if (room) {
+          // Unsubscribe presence listener using room's unsubscribe method
+          if (room.presenceListener) {
+            room.presence.subscribe("leave", room.presenceListener);
+            delete roomConnections.current[activeChat].presenceListener;
+          }
+
+          await room.presence.leave({
+            action: "left",
+            userId: clientId,
+            roomId: activeChat,
+            timestamp: Date.now(),
+          });
+
+          // Log own leave manually
+          console.log(`Presence event: leave by ${clientId}`, {
+            action: "left",
+            userId: clientId,
+            roomId: activeChat,
+            timestamp: Date.now(),
+          });
+        }
+      };
+      cleanup();
+    };
+  }, [activeChat, chatClient, clientId, cleanupConnections]);
+
+  // useEffect(() => {
+  //   const handleChatExit = async () => {
+  //     if (prevActiveChatRef.current !== null && activeChat === null) {
+  //       const roomTypeUpper = activeTab.toUpperCase();
+  //       if (["FITNESS", "WELLNESS", "SPORTS", "NUTRITION", "RM"].includes(roomTypeUpper)) {
+  //         try {
+  //           await axios.patch(
+  //             `${API_BASE_URL}/human/human/mark-seen`,
+  //             {
+  //               userId: clientId,
+  //               roomType: roomTypeUpper,
+  //               userType: "user",
+  //               handled: "",
+  //             }
+  //           );
+  //           setRoomNotifications(prev => ({
+  //             ...prev,
+  //             [roomTypeUpper]: false
+  //           }));
+  //         } catch (error) {
+  //           console.error("Error marking as seen:", error);
+  //         }
+  //       }
+  //     }
+  //   };
+  //git stash
+  //   handleChatExit();
+  //   prevActiveChatRef.current = activeChat;
+  // }, [activeChat, activeTab, clientId]);
+  //   useEffect(() => {
+  //   if (activeChat && ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(activeTab)) {
+  // setRoomNotifications(prev => ({
+  //   ...prev,
+  //   [activeTab.toUpperCase()]: false
+  // }));
+  //   }
+  // }, [activeChat]);
 
   if (!realtimeClient || !chatClient) {
     return (
@@ -886,419 +1024,422 @@ useEffect(() => {
 
   return (
     <>
-     <AblyProvider client={realtimeClient}>
-    <ChatClientProvider client={chatClient}>
-      <Header
-        title={"Communications"}
-        activeTab={activeTab}
-        hasUrlParams={urlType === 3}
-        urlRoomType={urlRoomType}
-        roomNotifications={roomNotifications}
-        setActiveTab={async (tab) => {
-          setActiveTab(tab);
+      <AblyProvider client={realtimeClient}>
+        <ChatClientProvider client={chatClient}>
+          <Header
+            title={"Communications"}
+            activeTab={activeTab}
+            hasUrlParams={urlType === 3}
+            urlRoomType={urlRoomType}
+            roomNotifications={roomNotifications}
+            setActiveTab={async (tab) => {
+              setActiveTab(tab);
 
-          // ALWAYS clear these states first for any tab switch
-          setCustomRoomNameForParam(null);
-          setCurrentRoomData(null);
-          setActiveChat(null);
-          setParamChatType(false);
+              // ALWAYS clear these states first for any tab switch
+              setCustomRoomNameForParam(null);
+              setCurrentRoomData(null);
+              setActiveChat(null);
+              setParamChatType(false);
 
-          const url = new URL(window.location.href);
-          url.searchParams.delete("context");
-
-          // Handle single room tabs (Fitness, Wellness, Sports, Nutrition)
-          if (
-            ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(tab)
-          ) {
-
-    //         setRoomNotifications(prev => ({
-    //   ...prev,
-    //   [tab.toUpperCase()]: false
-    // }));
-            if (tab === "RM") {
-              // Special handling for RM tab - directly fetch and open chat
-              try {
-                const response = await axios.get(
-                  `${API_BASE_URL}/human/human/${clientId}`
-                );
-                const roomsData = response.data;
-
-                // Filter for RM room specifically
-                const rmRoom = roomsData.find(
-                  (room: any) => room.roomType === "RM"
-                );
-
-                if (rmRoom) {
-                  // Found RM room - open it directly
-                  setActiveChat(rmRoom.chatId);
-                  setUrlRoomType(rmRoom.roomType);
-                  setParamChatType(true);
-
-                  // Set currentRoomData for the chat room
-                  const rmRoomData = {
-                    chatId: rmRoom.chatId,
-                    roomName: rmRoom.roomName,
-                    roomType: rmRoom.roomType,
-                  };
-
-                  setTimeout(() => {
-                    setCurrentRoomData(rmRoomData);
-                  }, 50);
-
-                  // Also update allRoomsData cache
-                  setAllRoomsData((prev) => ({
-                    ...prev,
-                    RM: rmRoomData,
-                  }));
-                } else {
-                  // No RM room found - show not available UI
-                  setActiveChat(null);
-                  setCurrentRoomData(null);
-                }
-                return;
-              } catch (error) {
-                console.error("Error fetching RM room:", error);
-                setActiveChat(null);
-                setCurrentRoomData(null);
-              }
-            }
-            const roomData = await fetchRoomData(tab);
-            if (roomData) {
-              setActiveChat(roomData.chatId);
-              setUrlRoomType(roomData.roomType);
-              setParamChatType(true);
-              // Set currentRoomData after a brief delay to ensure clean state
-              setTimeout(() => {
-                setCurrentRoomData(roomData);
-              }, 50);
-            }
-          } else if (tab === "Events") {
-            setActiveChat("EVENT_1A");
-          } else if (tab === "My Tribe") {
-            setActiveChat("CHAT_SOTD47");
-          } else if (tab === "My Game") {
-            // For My Game, activeChat stays null to show ChatList
-            setActiveChat(null);
-          } else {
-            // For My Buddy and other tabs
-            setActiveChat(null);
-          }
-
-          setChatIdFromParams(false);
-          setShowNotifications(false);
-
-          // Clear URL params based on URL type and tab switch
-          if (
-            (urlType === 3 &&
-              !["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
-                tab
-              )) ||
-            (urlType === 2 && tab !== "My Game")
-          ) {
-            const url = new URL(window.location.href);
-            if (urlType === 3) {
-              url.searchParams.delete("roomChatId");
-              url.searchParams.delete("roomnames");
-              url.searchParams.delete("roomType");
+              const url = new URL(window.location.href);
               url.searchParams.delete("context");
-              setUrlType(1);
-              setHasUrlParams(false);
-              setUrlRoomType("");
-            }
-            if (urlType === 2) {
-              url.searchParams.delete("chatId");
-            }
-          }
-          window.history.replaceState({}, document.title, url.toString());
-        }}
-        showBackButton={true}
-        onBackClick={() => {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("chatId");
-          url.searchParams.delete("roomChatId");
-          url.searchParams.delete("roomnames");
-          url.searchParams.delete("roomType");
-          url.searchParams.delete("context");
-          window.history.replaceState({}, document.title, url.toString());
-          window.location.href = `https://playbookingv3.forgehub.in/viewPlan`;
-        }}
-        showNotifications={() => setShowNotifications(true)}
-        isNotificationsOpen={showNotifications}
-      />
-      
-      {/* Notification Modal */}
-      {showNotifications && (
-        <div className="fixed mt-48 left-4 right z-50 shadow-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-semibold">Notifications</h2>
-            <button
-              onClick={() => setShowNotifications(false)}
-              className="text-sm text-gray-500"
-            >
-              Close
-            </button>
-          </div>
 
-          {pendingRequests.length === 0 ? (
-            <ChatCard
-              label="No notifications"
-              count={0}
-              time=""
-              actions={[]} // no actions
-            />
-          ) : (
-            pendingRequests.map((n) => (
-              <ChatCard
-                key={n.id}
-                label={n.text}
-                count={n.id}
-                time=""
-                actions={n.actions} // assume array like ["accept", "decline"]
-                onAccept={() => acceptNotification(n.userId)}
-                onDecline={() => deleteNotification(n.userId)}
-              />
-            ))
-          )}
-        </div>
-      )}
+              // Handle single room tabs (Fitness, Wellness, Sports, Nutrition)
+              if (
+                ["Fitness", "Wellness", "Sports", "Nutrition", "RM"].includes(
+                  tab
+                )
+              ) {
+                //         setRoomNotifications(prev => ({
+                //   ...prev,
+                //   [tab.toUpperCase()]: false
+                // }));
+                if (tab === "RM") {
+                  // Special handling for RM tab - directly fetch and open chat
+                  try {
+                    const response = await axios.get(
+                      `${API_BASE_URL}/human/human/${clientId}`
+                    );
+                    const roomsData = response.data;
 
-      {!showNotifications && (
-        <>
-          {chatIdFromParams ? (
-            // OLD FLOW - open as before
-            <div className="mt-44">
-              <ChatRoom
-                key={`old-flow-${activeChat}-${Date.now()}`}
-                type="game"
-                chatId={activeChat!}
-                goBack={() => {
-                  setActiveChat(null);
-                  setChatIdFromParams(false);
-                  setCustomRoomNameForParam(null);
-                  setCurrentRoomData(null);
-                  setActiveTab("My Game");
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete("chatId");
-                  setUrlType(1);
-                  window.history.replaceState(
-                    {},
-                    document.title,
-                    url.toString()
-                  );
-                }}
-                activeTab="My Game"
-                roomName={`${activeChat}`}
-                chatNames={""}
-              />
-            </div>
-          ) : customRoomNameForParam ? (
-            // NEW FLOW - open with customRoomNameForParam
-            <div className="mt-44">
-              <ChatRoom
-                key={`new-flow-${
-                  customRoomNameForParam.roomChatId
-                }-${Date.now()}`} // ← CHANGED KEY
-                type="game"
-                chatId={customRoomNameForParam.roomChatId}
-                goBack={() => {
-                  setActiveChat(null);
-                  setParamChatType(false);
-                  setCustomRoomNameForParam(null);
-                  setActiveTab("My Buddy");
-                  const url = new URL(window.location.href);
+                    // Filter for RM room specifically
+                    const rmRoom = roomsData.find(
+                      (room: any) => room.roomType === "RM"
+                    );
+
+                    if (rmRoom) {
+                      // Found RM room - open it directly
+                      setActiveChat(rmRoom.chatId);
+                      setUrlRoomType(rmRoom.roomType);
+                      setParamChatType(true);
+
+                      // Set currentRoomData for the chat room
+                      const rmRoomData = {
+                        chatId: rmRoom.chatId,
+                        roomName: rmRoom.roomName,
+                        roomType: rmRoom.roomType,
+                      };
+
+                      setTimeout(() => {
+                        setCurrentRoomData(rmRoomData);
+                      }, 50);
+
+                      // Also update allRoomsData cache
+                      setAllRoomsData((prev) => ({
+                        ...prev,
+                        RM: rmRoomData,
+                      }));
+                    } else {
+                      // No RM room found - show not available UI
+                      setActiveChat(null);
+                      setCurrentRoomData(null);
+                    }
+                    return;
+                  } catch (error) {
+                    console.error("Error fetching RM room:", error);
+                    setActiveChat(null);
+                    setCurrentRoomData(null);
+                  }
+                }
+                const roomData = await fetchRoomData(tab);
+                if (roomData) {
+                  setActiveChat(roomData.chatId);
+                  setUrlRoomType(roomData.roomType);
+                  setParamChatType(true);
+                  // Set currentRoomData after a brief delay to ensure clean state
+                  setTimeout(() => {
+                    setCurrentRoomData(roomData);
+                  }, 50);
+                }
+              } else if (tab === "Events") {
+                setActiveChat("EVENT_1A");
+              } else if (tab === "My Tribe") {
+                setActiveChat("CHAT_SOTD47");
+              } else if (tab === "My Game") {
+                // For My Game, activeChat stays null to show ChatList
+                setActiveChat(null);
+              } else {
+                // For My Buddy and other tabs
+                setActiveChat(null);
+              }
+
+              setChatIdFromParams(false);
+              setShowNotifications(false);
+
+              // Clear URL params based on URL type and tab switch
+              if (
+                (urlType === 3 &&
+                  ![
+                    "Fitness",
+                    "Wellness",
+                    "Sports",
+                    "Nutrition",
+                    "RM",
+                  ].includes(tab)) ||
+                (urlType === 2 && tab !== "My Game")
+              ) {
+                const url = new URL(window.location.href);
+                if (urlType === 3) {
                   url.searchParams.delete("roomChatId");
                   url.searchParams.delete("roomnames");
                   url.searchParams.delete("roomType");
                   url.searchParams.delete("context");
-                  window.history.replaceState(
-                    {},
-                    document.title,
-                    url.toString()
-                  );
-                }}
-                activeTab="My Game"
-                roomName={
-                  customRoomNameForParam.roomChatId
+                  setUrlType(1);
+                  setHasUrlParams(false);
+                  setUrlRoomType("");
                 }
-                chatNames={customRoomNameForParam.roomDisplayName}
-              />
+                if (urlType === 2) {
+                  url.searchParams.delete("chatId");
+                }
+              }
+              window.history.replaceState({}, document.title, url.toString());
+            }}
+            showBackButton={true}
+            onBackClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("chatId");
+              url.searchParams.delete("roomChatId");
+              url.searchParams.delete("roomnames");
+              url.searchParams.delete("roomType");
+              url.searchParams.delete("context");
+              window.history.replaceState({}, document.title, url.toString());
+              window.location.href = `https://playbookingv3.forgehub.in/viewPlan`;
+            }}
+            showNotifications={() => setShowNotifications(true)}
+            isNotificationsOpen={showNotifications}
+          />
+
+          {/* Notification Modal */}
+          {showNotifications && (
+            <div className="fixed mt-48 left-4 right z-50 shadow-lg p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">Notifications</h2>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="text-sm text-gray-500"
+                >
+                  Close
+                </button>
+              </div>
+
+              {pendingRequests.length === 0 ? (
+                <ChatCard
+                  label="No notifications"
+                  count={0}
+                  time=""
+                  actions={[]} // no actions
+                />
+              ) : (
+                pendingRequests.map((n) => (
+                  <ChatCard
+                    key={n.id}
+                    label={n.text}
+                    count={n.id}
+                    time=""
+                    actions={n.actions} // assume array like ["accept", "decline"]
+                    onAccept={() => acceptNotification(n.userId)}
+                    onDecline={() => deleteNotification(n.userId)}
+                  />
+                ))
+              )}
             </div>
-          ) : (
+          )}
+
+          {!showNotifications && (
             <>
-              {/* Tribe Icons */}
-              {chatType === "tribe" && (
-                <div
-                  className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
-                  style={{
-                    height: "35px",
-                    scrollbarWidth: "auto",
-                    WebkitOverflowScrolling: "touch",
-                  }}
-                >
-                  {mySport.map((sport) => {
-                    const IconComponent = getIconForSport(sport.name);
-                    return (
-                      <div
-                        key={sport.name}
-                        onClick={() => setActiveChat(sport.chatId)}
-                        className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
-                          activeChat === sport.chatId
-                            ? "bg-[#00f0ff] shadow-md"
-                            : "bg-gray-200"
-                        }`}
-                      >
-                        <IconComponent />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Events Icons */}
-              {/* Events Icons */}
-              {chatType === "events" && (
-                <div
-                  className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
-                  style={{
-                    height: "35px",
-                    scrollbarWidth: "auto",
-                    WebkitOverflowScrolling: "touch",
-                  }}
-                >
-                  {[1, 2, 3, 4, 5].map((eventNum) => (
-                    <div
-                      key={`event-${eventNum}A`}
-                      onClick={() => setActiveChat(`EVENT_${eventNum}A`)}
-                      className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
-                        activeChat === `EVENT_${eventNum}A`
-                          ? "bg-[#00f0ff] shadow-md"
-                          : "bg-gray-200"
-                      }`}
-                    >
-                      <div className="text-xl">🎪</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div
-                className={`${
-                  activeTab === "My Tribe" || activeTab === "Events"
-                    ? "mt-4"
-                    : activeTab === "My Buddy" ||
-                      activeTab === "My Game" ||
-                      [
-                        "Fitness",
-                        "Wellness",
-                        "Sports",
-                        "Nutrition",
-                        "RM",
-                      ].includes(activeTab)
-                    ? "mt-48"
-                    : ""
-                } bg-white shadow-lg`}
-              >
-                {isInChatRoom ? (
+              {chatIdFromParams ? (
+                // OLD FLOW - open as before
+                <div className="mt-44">
                   <ChatRoom
-                    key={`main-${activeTab}-${activeChat}-${
-                      currentRoomData?.chatId || "default"
-                    }-${Date.now()}`}
-                    type={chatType}
+                    key={`old-flow-${activeChat}-${Date.now()}`}
+                    type="game"
                     chatId={activeChat!}
                     goBack={() => {
                       setActiveChat(null);
-                      setCurrentRoomData(null);
+                      setChatIdFromParams(false);
                       setCustomRoomNameForParam(null);
-                      setParamChatType(false);
-
-                      // Go back logic
-                      if (
-                        [
-                          "Fitness",
-                          "Wellness",
-                          "Sports",
-                          "Nutrition",
-                          "RM",
-                        ].includes(activeTab) ||
-                        activeTab === "Events"
-                      ) {
-                        setActiveTab("My Buddy");
-                      } else if (activeTab === "My Tribe") {
-                        setActiveTab("My Tribe");
-                      } else if (activeTab === "My Game") {
-                        setActiveTab("My Game");
-                      } else {
-                        setActiveTab("My Buddy");
-                      }
-
-                      // Clear URL params
+                      setCurrentRoomData(null);
+                      setActiveTab("My Game");
                       const url = new URL(window.location.href);
-                      if (urlType === 3) {
-                        url.searchParams.delete("roomChatId");
-                        url.searchParams.delete("roomnames");
-                        url.searchParams.delete("roomType");
-                        url.searchParams.delete("context");
-                        setUrlType(1);
-                        setHasUrlParams(false);
-                        setUrlRoomType("");
-                      }
-                      if (urlType === 2) {
-                        url.searchParams.delete("chatId");
-                      }
+                      url.searchParams.delete("chatId");
+                      setUrlType(1);
                       window.history.replaceState(
                         {},
                         document.title,
                         url.toString()
                       );
                     }}
-                    activeTab={activeTab}
-                    roomName={
-                      [
-                        "Fitness",
-                        "Wellness",
-                        "Sports",
-                        "Nutrition",
-                        "RM",
-                      ].includes(activeTab) && currentRoomData
-                        ? `${currentRoomData.chatId}`
-                        : activeTab === "Events"
-                        ? `room-events-${activeChat}`
-                        : getRoomName(chatType, clientId, activeChat!)
-                    }
-                    chatNames={
-                      [
-                        "Fitness",
-                        "Wellness",
-                        "Sports",
-                        "Nutrition",
-                        "RM",
-                      ].includes(activeTab) && currentRoomData
-                        ? currentRoomData.roomName
-                        : activeTab === "Events"
-                        ? `Event ${activeChat
-                            ?.replace("EVENT_", "")
-                            .replace("A", "")}`
-                        : ""
-                    }
+                    activeTab="My Game"
+                    roomName={`${activeChat}`}
+                    chatNames={""}
                   />
-                ) : (
-                  <ChatList
-                    type={chatType}
-                    onOpenChat={(gameName) => {
-                      setActiveChat(gameName);
-                      console.log("opening chat with id", gameName);
+                </div>
+              ) : customRoomNameForParam ? (
+                // NEW FLOW - open with customRoomNameForParam
+                <div className="mt-44">
+                  <ChatRoom
+                    key={`new-flow-${
+                      customRoomNameForParam.roomChatId
+                    }-${Date.now()}`} // ← CHANGED KEY
+                    type="game"
+                    chatId={customRoomNameForParam.roomChatId}
+                    goBack={() => {
+                      setActiveChat(null);
+                      setParamChatType(false);
+                      setCustomRoomNameForParam(null);
+                      setActiveTab("My Buddy");
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete("roomChatId");
+                      url.searchParams.delete("roomnames");
+                      url.searchParams.delete("roomType");
+                      url.searchParams.delete("context");
+                      window.history.replaceState(
+                        {},
+                        document.title,
+                        url.toString()
+                      );
                     }}
-                    activeChat={activeChat}
-                    singleRoomData={singleRoomData}
+                    activeTab="My Game"
+                    roomName={customRoomNameForParam.roomChatId}
+                    chatNames={customRoomNameForParam.roomDisplayName}
                   />
-                )}
-              </div>
+                </div>
+              ) : (
+                <>
+                  {/* Tribe Icons */}
+                  {chatType === "tribe" && (
+                    <div
+                      className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
+                      style={{
+                        height: "35px",
+                        scrollbarWidth: "auto",
+                        WebkitOverflowScrolling: "touch",
+                      }}
+                    >
+                      {mySport.map((sport) => {
+                        const IconComponent = getIconForSport(sport.name);
+                        return (
+                          <div
+                            key={sport.name}
+                            onClick={() => setActiveChat(sport.chatId)}
+                            className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
+                              activeChat === sport.chatId
+                                ? "bg-[#00f0ff] shadow-md"
+                                : "bg-gray-200"
+                            }`}
+                          >
+                            <IconComponent />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Events Icons */}
+                  {/* Events Icons */}
+                  {chatType === "events" && (
+                    <div
+                      className="mx-4 mt-40 flex overflow-x-auto overflow-y-hidden"
+                      style={{
+                        height: "35px",
+                        scrollbarWidth: "auto",
+                        WebkitOverflowScrolling: "touch",
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5].map((eventNum) => (
+                        <div
+                          key={`event-${eventNum}A`}
+                          onClick={() => setActiveChat(`EVENT_${eventNum}A`)}
+                          className={`flex-shrink-0 cursor-pointer rounded-md w-8 h-8 mx-2 flex items-center justify-center transition ${
+                            activeChat === `EVENT_${eventNum}A`
+                              ? "bg-[#00f0ff] shadow-md"
+                              : "bg-gray-200"
+                          }`}
+                        >
+                          <div className="text-xl">🎪</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div
+                    className={`${
+                      activeTab === "My Tribe" || activeTab === "Events"
+                        ? "mt-4"
+                        : activeTab === "My Buddy" ||
+                          activeTab === "My Game" ||
+                          [
+                            "Fitness",
+                            "Wellness",
+                            "Sports",
+                            "Nutrition",
+                            "RM",
+                          ].includes(activeTab)
+                        ? "mt-48"
+                        : ""
+                    } bg-white shadow-lg`}
+                  >
+                    {isInChatRoom ? (
+                      <ChatRoom
+                        key={`main-${activeTab}-${activeChat}-${
+                          currentRoomData?.chatId || "default"
+                        }-${Date.now()}`}
+                        type={chatType}
+                        chatId={activeChat!}
+                        goBack={() => {
+                          setActiveChat(null);
+                          setCurrentRoomData(null);
+                          setCustomRoomNameForParam(null);
+                          setParamChatType(false);
+
+                          // Go back logic
+                          if (
+                            [
+                              "Fitness",
+                              "Wellness",
+                              "Sports",
+                              "Nutrition",
+                              "RM",
+                            ].includes(activeTab) ||
+                            activeTab === "Events"
+                          ) {
+                            setActiveTab("My Buddy");
+                          } else if (activeTab === "My Tribe") {
+                            setActiveTab("My Tribe");
+                          } else if (activeTab === "My Game") {
+                            setActiveTab("My Game");
+                          } else {
+                            setActiveTab("My Buddy");
+                          }
+
+                          // Clear URL params
+                          const url = new URL(window.location.href);
+                          if (urlType === 3) {
+                            url.searchParams.delete("roomChatId");
+                            url.searchParams.delete("roomnames");
+                            url.searchParams.delete("roomType");
+                            url.searchParams.delete("context");
+                            setUrlType(1);
+                            setHasUrlParams(false);
+                            setUrlRoomType("");
+                          }
+                          if (urlType === 2) {
+                            url.searchParams.delete("chatId");
+                          }
+                          window.history.replaceState(
+                            {},
+                            document.title,
+                            url.toString()
+                          );
+                        }}
+                        activeTab={activeTab}
+                        roomName={
+                          [
+                            "Fitness",
+                            "Wellness",
+                            "Sports",
+                            "Nutrition",
+                            "RM",
+                          ].includes(activeTab) && currentRoomData
+                            ? `${currentRoomData.chatId}`
+                            : activeTab === "Events"
+                            ? `room-events-${activeChat}`
+                            : getRoomName(chatType, clientId, activeChat!)
+                        }
+                        chatNames={
+                          [
+                            "Fitness",
+                            "Wellness",
+                            "Sports",
+                            "Nutrition",
+                            "RM",
+                          ].includes(activeTab) && currentRoomData
+                            ? currentRoomData.roomName
+                            : activeTab === "Events"
+                            ? `Event ${activeChat
+                                ?.replace("EVENT_", "")
+                                .replace("A", "")}`
+                            : ""
+                        }
+                      />
+                    ) : (
+                      <ChatList
+                        type={chatType}
+                        onOpenChat={(gameName) => {
+                          setActiveChat(gameName);
+                          console.log("opening chat with id", gameName);
+                        }}
+                        activeChat={activeChat}
+                        singleRoomData={singleRoomData}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
-        </>
-      )}
-      </ChatClientProvider>
-  </AblyProvider>
+        </ChatClientProvider>
+      </AblyProvider>
     </>
   );
 };
